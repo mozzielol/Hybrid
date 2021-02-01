@@ -75,7 +75,9 @@ class Hybrid_Clf(object):
 
                 optimizer.step()
                 n_iter += 1
-
+                print('Epoch {}/{}, training loss: {:.4f}'
+                      .format(epoch_counter, self.config['epochs'], loss.item()))
+            print('')
             # validate the model if requested
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 valid_loss = self._validate(model, valid_loader)
