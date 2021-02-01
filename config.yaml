@@ -1,4 +1,4 @@
-batch_size: 512
+batch_size: 10
 epochs: 80
 eval_every_n_epochs: 1
 fine_tune_from: None
@@ -7,14 +7,11 @@ weight_decay: 10e-6
 fp16_precision: False
 
 model:
-  out_dim: 256
+  out_dim: 10
   base_model: "resnet18"
 
 dataset:
-  s: 1
-  input_shape: (96,96,3)
   num_workers: 0
-  valid_size: 0.05
 
 loss:
   temperature: 0.5

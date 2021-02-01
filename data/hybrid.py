@@ -63,9 +63,10 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     return image_low + image_high
 
 
-def get_hybrid_images(image_batch, kernel=(9, 9), gt_batch=None):
+def get_hybrid_images(image_batch, kernel=(9, 9), gt_batch=None, num_classes=10):
     """
     Generate hybrid images for an image batch
+    :param num_classes:
     :param image_batch:
     :param kernel:
     :param gt_batch:
@@ -74,21 +75,29 @@ def get_hybrid_images(image_batch, kernel=(9, 9), gt_batch=None):
     if len(image_batch) < 2:
         return None
 
-    images = image_batch.permute(2, 3, 1).numpy() if torch.is_tensor(image_batch) else image_batch
+    images = image_batch.permute(0, 2, 3, 1).numpy() if torch.is_tensor(image_batch) else image_batch
     hybrid_images = []
     indices_pairs = random.choices(list(permutations(range(len(images)), 2)), k=len(images))
     for indices_pair in indices_pairs:
         hybrid_images.append(compose_hybrid_image(images[indices_pair[0]], images[indices_pair[1]], kernel))
     hybrid_images = np.stack(hybrid_images)
-    hybrid_images = torch.tensor(hybrid_images).permute(3, 1, 2) if torch.is_tensor(image_batch) else hybrid_images
+    hybrid_images = torch.tensor(hybrid_images).permute(0, 3, 1, 2) if torch.is_tensor(image_batch) else hybrid_images
 
     if gt_batch is not None:
         multi_labels = []
         for indices_pair in indices_pairs:
-            multi_labels.append((gt_batch[indices_pair[0]], gt_batch[indices_pair[1]]))
-        return hybrid_images, multi_labels
+            l = to_onehot(gt_batch[indices_pair[0]], num_classes) + to_onehot(gt_batch[indices_pair[1]], num_classes)
+            multi_labels.append(l.clip(0, 1))
+        return hybrid_images, torch.Tensor(multi_labels).squeeze()
 
     return hybrid_images
+
+
+def to_onehot(labels, n_categories, dtype=torch.float32):
+    b = np.zeros((1, n_categories))
+    b[np.arange(1), labels] = 1
+
+    return b
 
 
 if __name__ == '__main__':

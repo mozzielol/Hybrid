@@ -1,7 +1,7 @@
 import torch
 from models.resnet import ResNet
 from torch.utils.tensorboard import SummaryWriter
-import torch.nn.functional as F
+from data.hybrid import get_hybrid_images
 import os
 import shutil
 import numpy as np
@@ -22,12 +22,26 @@ class Hybrid_Clf(object):
         self.device = self._get_device()
         self.writer = SummaryWriter()
         self.dataset = dataset
-        self.criterion = torch.nn.BCELoss(reduce='sum')
+        self.multi_criterion = torch.nn.BCELoss(reduce='sum')
+        self.single_criterion = torch.nn.CrossEntropyLoss(reduce='mean')
 
     def _get_device(self):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print("Running on:", device)
         return device
+
+    def _step(self, x, y, model):
+        sin_y = y
+        x, mul_y = get_hybrid_images(x, (5, 5), y, self.config['model']['out_dim'])
+        x = x.to(self.device)
+        mul_y = mul_y.to(self.device)
+        sin_y = sin_y.to(self.device)
+
+        multi_logits, single_logits = model(x)
+        loss = self.multi_criterion(multi_logits, mul_y)
+        loss += self.single_criterion(single_logits, sin_y)
+
+        return loss
 
     def train(self):
 
@@ -53,13 +67,7 @@ class Hybrid_Clf(object):
         for epoch_counter in range(self.config['epochs']):
             for x, y in train_loader:
                 optimizer.zero_grad()
-
-                x = x.to(self.device)
-                y = y.to(self.device)
-
-                logits = model(x)
-                loss = self.criterion(logits, y)
-
+                loss = self._step(x, y, model)
                 if n_iter % self.config['log_every_n_steps'] == 0:
                     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
 
@@ -104,10 +112,7 @@ class Hybrid_Clf(object):
             valid_loss = 0.0
             counter = 0
             for x, y in valid_loader:
-                x = x.to(self.device)
-                y = y.to(self.device)
-                logits = model(x)
-                loss = self.criterion(logits, y)
+                loss = self._step(x, y, model)
                 valid_loss += loss.item()
                 counter += 1
             valid_loss /= counter

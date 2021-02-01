@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
@@ -15,9 +16,13 @@ class ResNet(nn.Module):
 
         self.features = nn.Sequential(*list(resnet.children())[:-1])
 
-        # projection MLP
+        # Multi-label head
         self.l1 = nn.Linear(num_ftrs, num_ftrs)
         self.l2 = nn.Linear(num_ftrs, out_dim)
+
+        # Single-label head
+        self.l3 = nn.Linear(num_ftrs, num_ftrs)
+        self.l4 = nn.Linear(num_ftrs, out_dim)
 
     def _get_basemodel(self, model_name):
         try:
@@ -29,10 +34,17 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         h = self.features(x)
-        h = h.squeeze()
+        h = torch.flatten(h, start_dim=1)
 
+        # multi-label
         x = self.l1(h)
         x = F.relu(x)
         x = self.l2(x)
-        x = F.sigmoid(x)
-        return x
+        x = torch.sigmoid(x)
+
+        # single-label
+        y = self.l3(h)
+        y = F.relu(y)
+        y = self.l4(y)
+        y = F.softmax(y, dim=-1)
+        return x, y
