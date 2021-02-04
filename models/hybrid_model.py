@@ -37,7 +37,8 @@ class Hybrid_Clf(object):
         mul_y = mul_y.to(self.device)
         sin_y = sin_y.to(self.device)
 
-        multi_logits, single_logits = model(x)
+        multi_logits = model.forward_multi(x)
+        single_logits = model(x)
         loss = self.multi_criterion(multi_logits, mul_y)
         loss += self.single_criterion(single_logits, sin_y)
 

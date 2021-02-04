@@ -36,15 +36,20 @@ class ResNet(nn.Module):
         h = self.features(x)
         h = torch.flatten(h, start_dim=1)
 
+        # single-label
+        x = self.l3(h)
+        x = F.relu(x)
+        x = self.l4(x)
+        x = F.softmax(x, dim=-1)
+        return x
+
+    def forward_multi(self, x):
+        h = self.features(x)
+        h = torch.flatten(h, start_dim=1)
+
         # multi-label
         x = self.l1(h)
         x = F.relu(x)
         x = self.l2(x)
         x = torch.sigmoid(x)
-
-        # single-label
-        y = self.l3(h)
-        y = F.relu(y)
-        y = self.l4(y)
-        y = F.softmax(y, dim=-1)
-        return x, y
+        return x
