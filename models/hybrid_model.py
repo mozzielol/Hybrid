@@ -83,10 +83,10 @@ class Hybrid_Clf(object):
                 loss.backward()
 
                 optimizer.step()
-                n_iter += 1
                 if n_iter % self.config['print_every_n_iters'] == 0:
                     print('Epoch {}/{}, training loss: {:.4f}'
                           .format(epoch_counter, self.config['epochs'], loss.item()))
+                n_iter += 1
             print('')
             # validate the model if requested
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:

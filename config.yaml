@@ -1,11 +1,11 @@
-batch_size: 10
+batch_size: 64
 epochs: 80
 eval_every_n_epochs: 1
 fine_tune_from: None
 log_every_n_steps: 50
 weight_decay: 10e-6
 fp16_precision: False
-print_every_n_iters: 1000
+print_every_n_iters: 50
 save_model: False
 
 model:
