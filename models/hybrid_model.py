@@ -23,7 +23,7 @@ class Hybrid_Clf(object):
         self.writer = SummaryWriter()
         self.dataset = dataset
         self.multi_criterion = torch.nn.BCELoss(reduce='sum')
-        self.single_criterion = torch.nn.CrossEntropyLoss(reduce='mean')
+        self.single_criterion = torch.nn.CrossEntropyLoss()
 
     def _get_device(self):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -32,15 +32,21 @@ class Hybrid_Clf(object):
 
     def _step(self, x, y, model):
         sin_y = y
-        x, mul_y = get_hybrid_images(x, (5, 5), y, self.config['model']['out_dim'])
-        x = x.to(self.device)
-        mul_y = mul_y.to(self.device)
+        sin_x = x
+
+        sin_x = sin_x.to(self.device)
         sin_y = sin_y.to(self.device)
 
-        multi_logits = model.forward_multi(x)
-        single_logits = model(x)
-        loss = self.multi_criterion(multi_logits, mul_y)
-        loss += self.single_criterion(single_logits, sin_y)
+        # Single loss
+        single_logits = model(sin_x)
+        loss = self.single_criterion(single_logits, sin_y)
+
+        # Multi loss
+        # x, mul_y = get_hybrid_images(x, (3, 3), y, self.config['model']['out_dim'])
+        # x = x.to(self.device)
+        # mul_y = mul_y.to(self.device)
+        # multi_logits = model.forward_multi(x)
+        # loss += self.multi_criterion(multi_logits, mul_y)
 
         return loss
 
@@ -51,7 +57,8 @@ class Hybrid_Clf(object):
         model = ResNet(**self.config["model"]).to(self.device)
         model = self._load_pre_trained_weights(model)
 
-        optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))
+        # optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                                last_epoch=-1)
@@ -59,7 +66,8 @@ class Hybrid_Clf(object):
         model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
 
         # save config file
-        _save_config_file(model_checkpoints_folder)
+        if self.config['save_model']:
+            _save_config_file(model_checkpoints_folder)
 
         n_iter = 0
         valid_n_iter = 0
@@ -76,8 +84,9 @@ class Hybrid_Clf(object):
 
                 optimizer.step()
                 n_iter += 1
-                print('Epoch {}/{}, training loss: {:.4f}'
-                      .format(epoch_counter, self.config['epochs'], loss.item()))
+                if n_iter % self.config['print_every_n_iters'] == 0:
+                    print('Epoch {}/{}, training loss: {:.4f}'
+                          .format(epoch_counter, self.config['epochs'], loss.item()))
             print('')
             # validate the model if requested
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
@@ -85,7 +94,8 @@ class Hybrid_Clf(object):
                 if valid_loss < best_valid_loss:
                     # save the model weights
                     best_valid_loss = valid_loss
-                    torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
+                    if self.config['save_model']:
+                        torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
 
                 self.writer.add_scalar('validation_loss', valid_loss, global_step=valid_n_iter)
                 valid_n_iter += 1

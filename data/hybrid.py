@@ -7,10 +7,10 @@ from matplotlib import pyplot as plt
 from itertools import permutations
 
 
-def hybrid_image_opencv():
+def hybrid_image_opencv(image1, image2):
     kernel = (49, 49)
-    image1 = cv2.cvtColor(cv2.imread('a0010-jmac_MG_4807.jpg'), cv2.COLOR_BGR2RGB)
-    image2 = cv2.cvtColor(cv2.imread('a0014-WP_CRW_6320.jpg'), cv2.COLOR_BGR2RGB)
+    # image1 = cv2.cvtColor(cv2.imread('a0010-jmac_MG_4807.jpg'), cv2.COLOR_BGR2RGB)
+    # image2 = cv2.cvtColor(cv2.imread('a0014-WP_CRW_6320.jpg'), cv2.COLOR_BGR2RGB)
 
     image_low = cv2.GaussianBlur(image1, kernel, 0)
     image_high = image2 - cv2.GaussianBlur(image2, kernel, 0)

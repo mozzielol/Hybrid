@@ -32,6 +32,7 @@ class ResNet(nn.Module):
         except:
             raise ("Invalid model name. Check the config file and pass one of: resnet18 or resnet50")
 
+
     def forward(self, x):
         h = self.features(x)
         h = torch.flatten(h, start_dim=1)
@@ -40,7 +41,7 @@ class ResNet(nn.Module):
         x = self.l3(h)
         x = F.relu(x)
         x = self.l4(x)
-        x = F.softmax(x, dim=-1)
+        # x = F.softmax(x, dim=-1)
         return x
 
     def forward_multi(self, x):
