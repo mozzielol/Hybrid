@@ -10,6 +10,5 @@ def main():
     simclr = Hybrid_Clf(dataset, config)
     simclr.train()
 
-
 if __name__ == "__main__":
     main()

@@ -42,11 +42,11 @@ class Hybrid_Clf(object):
         loss = self.single_criterion(single_logits, sin_y)
 
         # Multi loss
-        # x, mul_y = get_hybrid_images(x, (3, 3), y, self.config['model']['out_dim'])
-        # x = x.to(self.device)
-        # mul_y = mul_y.to(self.device)
-        # multi_logits = model.forward_multi(x)
-        # loss += self.multi_criterion(multi_logits, mul_y)
+        x, mul_y = get_hybrid_images(x, (3, 3), y, self.config['model']['out_dim'])
+        x = x.to(self.device)
+        mul_y = mul_y.to(self.device)
+        multi_logits = model.forward_multi(x)
+        loss += self.multi_criterion(multi_logits, mul_y)
 
         return loss
 
@@ -86,6 +86,8 @@ class Hybrid_Clf(object):
                 if n_iter % self.config['print_every_n_iters'] == 0:
                     print('Epoch {}/{}, training loss: {:.4f}'
                           .format(epoch_counter, self.config['epochs'], loss.item()))
+                    test_acc = self._validate(model, valid_loader, return_acc=True)
+                    print('Test accuracy is ', test_acc)
                 n_iter += 1
             print('')
             # validate the model if requested
@@ -104,6 +106,8 @@ class Hybrid_Clf(object):
             if epoch_counter >= 10:
                 scheduler.step()
             self.writer.add_scalar('cosine_lr_decay', scheduler.get_lr()[0], global_step=n_iter)
+            test_acc = self._validate(model, valid_loader, return_acc=True)
+            print('Test accuracy is ', test_acc)
 
     def _load_pre_trained_weights(self, model):
         try:
@@ -116,18 +120,27 @@ class Hybrid_Clf(object):
 
         return model
 
-    def _validate(self, model, valid_loader):
-
+    def _validate(self, model, valid_loader, return_acc=False):
         # validation steps
+        correct = 0
+        total = 0
         with torch.no_grad():
             model.eval()
 
             valid_loss = 0.0
             counter = 0
             for x, y in valid_loader:
-                loss = self._step(x, y, model)
-                valid_loss += loss.item()
-                counter += 1
-            valid_loss /= counter
+                if return_acc:
+                    outputs = model(x)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += y.size(0)
+                    correct += (predicted == y).sum().item()
+                else:
+                    loss = self._step(x, y, model)
+                    valid_loss += loss.item()
+                    counter += 1
+        if return_acc:
+            return 100 * correct / total
+        valid_loss /= counter
         model.train()
         return valid_loss
