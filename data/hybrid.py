@@ -75,7 +75,7 @@ def get_hybrid_images(image_batch, kernel=(9, 9), gt_batch=None, num_classes=10)
     if len(image_batch) < 2:
         return None
 
-    images = image_batch.permute(0, 2, 3, 1).numpy() if torch.is_tensor(image_batch) else image_batch
+    images = image_batch.permute(0, 2, 3, 1).cpu().numpy() if torch.is_tensor(image_batch) else image_batch
     hybrid_images = []
     indices_pairs = random.choices(list(permutations(range(len(images)), 2)), k=len(images))
     for indices_pair in indices_pairs:

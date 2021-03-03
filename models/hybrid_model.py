@@ -130,6 +130,7 @@ class Hybrid_Clf(object):
             valid_loss = 0.0
             counter = 0
             for x, y in valid_loader:
+                x, y = x.to(self.device), y.to(self.device)
                 if return_acc:
                     outputs = model(x)
                     _, predicted = torch.max(outputs.data, 1)
