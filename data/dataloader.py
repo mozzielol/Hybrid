@@ -19,16 +19,13 @@ class Dataloader:
         transform = transforms.Compose(
             [transforms.ToTensor(),
              ])
-        if self.dataset == 'cifar10':
-            return self._cifar10(transform)
-        elif self.dataset == 'imagenet':
-            return self._imagenet(transform)
-        else:
+        try:
+            loader = getattr(self, self.dataset)
+            return loader(transform)
+        except AttributeError:
             raise ValueError('dataset is not available')
 
-
-
-    def _cifar10(self, transform):
+    def cifar10(self, transform):
         trainset = torchvision.datasets.CIFAR10(root='./datasets', train=True,
                                                 download=True, transform=transform)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
@@ -40,7 +37,7 @@ class Dataloader:
                                                  shuffle=False, num_workers=self.num_workers)
         return trainloader, testloader
 
-    def _imagenet(self, transform):
+    def imagenet(self, transform):
         trainset = torchvision.datasets.ImageNet(root='./datasets', split='train',
                                                 download=True, transform=transform)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
@@ -53,3 +50,14 @@ class Dataloader:
         return trainloader, testloader
 
 
+    def stl10(self, transform):
+        trainset = torchvision.datasets.STL10(root='./datasets', split='train',
+                                                download=True, transform=transform)
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
+                                                  shuffle=True, num_workers=self.num_workers)
+
+        testset = torchvision.datasets.STL10(root='./datasets', split='test',
+                                               download=True, transform=transform)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size,
+                                                 shuffle=False, num_workers=self.num_workers)
+        return trainloader, testloader
