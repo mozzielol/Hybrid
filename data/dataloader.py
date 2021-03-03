@@ -10,18 +10,21 @@ Dataloader
 
 
 class Dataloader:
-    def __init__(self, batch_size, num_workers):
+    def __init__(self, batch_size, num_workers, name):
+        self.dataset = name
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def get_data_loaders(self, dataset='imagenet'):
+    def get_data_loaders(self):
         transform = transforms.Compose(
             [transforms.ToTensor(),
              ])
-        if dataset == 'cifar10':
+        if self.dataset == 'cifar10':
             return self._cifar10(transform)
-        elif dataset == 'imagenet':
+        elif self.dataset == 'imagenet':
             return self._imagenet(transform)
+        else:
+            raise ValueError('dataset is not available')
 
 
 
