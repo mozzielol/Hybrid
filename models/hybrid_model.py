@@ -37,16 +37,20 @@ class Hybrid_Clf(object):
         sin_x = sin_x.to(self.device)
         sin_y = sin_y.to(self.device)
 
-        # Single loss
-        single_logits = model(sin_x)
-        loss = self.single_criterion(single_logits, sin_y)
+        if self.config['loss']['multi_loss']:
+            # Single loss
+            single_logits = model(sin_x)
+            loss = self.single_criterion(single_logits, sin_y) * self.config['loss']['single_loss_weight']
 
-        # Multi loss
-        x, mul_y = get_hybrid_images(x, (3, 3), y, self.config['model']['out_dim'])
-        x = x.to(self.device)
-        mul_y = mul_y.to(self.device)
-        multi_logits = model.forward_multi(x)
-        loss += self.multi_criterion(multi_logits, mul_y)
+            # Multi loss
+            x, mul_y = get_hybrid_images(x, (3, 3), y, self.config['model']['out_dim'])
+            x = x.to(self.device)
+            mul_y = mul_y.to(self.device) * self.config['loss']['multi_loss_weight']
+            multi_logits = model.forward_multi(x)
+            loss += self.multi_criterion(multi_logits, mul_y)
+        else:
+            single_logits = model(sin_x)
+            loss = self.single_criterion(single_logits, sin_y) * self.config['loss']['single_loss_weight']
 
         return loss
 
@@ -54,7 +58,7 @@ class Hybrid_Clf(object):
 
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
-        model = ResNet(**self.config["model"]).to(self.device)
+        model = ResNet(self.config['loss']['multi_loss'], **self.config["model"]).to(self.device)
         model = self._load_pre_trained_weights(model)
 
         # optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))

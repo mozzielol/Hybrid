@@ -6,7 +6,7 @@ import torchvision.models as models
 
 class ResNet(nn.Module):
 
-    def __init__(self, base_model, out_dim):
+    def __init__(self, multi_loss, base_model, out_dim):
         super(ResNet, self).__init__()
         self.resnet_dict = {"resnet18": models.resnet18(pretrained=False),
                             "resnet50": models.resnet50(pretrained=False)}
@@ -16,9 +16,10 @@ class ResNet(nn.Module):
 
         self.features = nn.Sequential(*list(resnet.children())[:-1])
 
-        # Multi-label head
-        self.l1 = nn.Linear(num_ftrs, num_ftrs)
-        self.l2 = nn.Linear(num_ftrs, out_dim)
+        if multi_loss:
+            # Multi-label head
+            self.l1 = nn.Linear(num_ftrs, num_ftrs)
+            self.l2 = nn.Linear(num_ftrs, out_dim)
 
         # Single-label head
         self.l3 = nn.Linear(num_ftrs, num_ftrs)
