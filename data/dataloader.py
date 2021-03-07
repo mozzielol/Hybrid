@@ -38,15 +38,21 @@ class Dataloader:
         return trainloader, testloader
 
     def imagenet(self, transform):
-        trainset = torchvision.datasets.ImageNet(root='./datasets', split='train',
-                                                download=True, transform=transform)
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
-                                                  shuffle=True, num_workers=self.num_workers)
-
-        testset = torchvision.datasets.ImageNet(root='./datasets', split='test',
-                                               download=True, transform=transform)
-        testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size,
-                                                 shuffle=False, num_workers=self.num_workers)
+        data_transform = transforms.Compose([
+            transforms.RandomSizedCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+        imgs = torchvision.datasets.ImageFolder(root='/Users/mozzie/Desktop/DATA/imagenet/ImageNet-Datasets-Downloader-master/sub_imagenet/imagenet_images/',
+                                                   transform=data_transform)
+        train_set, val_set = torch.utils.data.random_split(imgs, [1000, 279])
+        trainloader = torch.utils.data.DataLoader(train_set,
+                                                     batch_size=self.batch_size, shuffle=True,
+                                                     num_workers=self.num_workers)
+        testloader = torch.utils.data.DataLoader(val_set,
+                                                     batch_size=self.batch_size, shuffle=True,
+                                                     num_workers=self.num_workers)
         return trainloader, testloader
 
 
