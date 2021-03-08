@@ -10,15 +10,15 @@ save_model: False
 
 model:
   out_dim: 10
-  base_model: "resnet18"
+  base_model: "cnn"
 
 dataset:
-  name: imagenet
+  name: cifar10
   num_workers: 0
 
 loss:
   temperature: 0.5
   use_cosine_similarity: True
-  multi_loss: False
+  multi_loss: True
   multi_loss_weight: 1.0
   single_loss_weight: 1.0

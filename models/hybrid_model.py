@@ -1,5 +1,5 @@
 import torch
-from models.resnet import ResNet
+from models.load_model import model_loader
 from torch.utils.tensorboard import SummaryWriter
 from data.hybrid import get_hybrid_images
 import os
@@ -58,7 +58,8 @@ class Hybrid_Clf(object):
 
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
-        model = ResNet(self.config['loss']['multi_loss'], **self.config["model"]).to(self.device)
+        model = model_loader(self.config['loss']['multi_loss'], **self.config["model"]).to(self.device)
+        print(model)
         model = self._load_pre_trained_weights(model)
 
         # optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))
