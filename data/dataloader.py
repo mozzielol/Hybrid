@@ -44,9 +44,10 @@ class Dataloader:
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
         ])
-        imgs = torchvision.datasets.ImageFolder(root='/Users/mozzie/Desktop/DATA/imagenet/ImageNet-Datasets-Downloader-master/sub_imagenet/imagenet_images/',
-                                                   transform=data_transform)
-        train_set, val_set = torch.utils.data.random_split(imgs, [1000, 279])
+        imgs = torchvision.datasets.ImageFolder(root='/home/fantasie/Pictures/ImageNet/imagenet_images',
+                                                transform=data_transform)
+        train_num = round(.9 * len(imgs))
+        train_set, val_set = torch.utils.data.random_split(imgs, [train_num, len(imgs) - train_num])
         trainloader = torch.utils.data.DataLoader(train_set,
                                                      batch_size=self.batch_size, shuffle=True,
                                                      num_workers=self.num_workers)
