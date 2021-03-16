@@ -5,6 +5,7 @@ from data.hybrid import get_hybrid_images
 import os
 import shutil
 import numpy as np
+from ray import tune
 
 torch.manual_seed(0)
 
@@ -20,7 +21,7 @@ class Hybrid_Clf(object):
     def __init__(self, dataset, config):
         self.config = config
         self.device = self._get_device()
-        self.writer = SummaryWriter()
+        # self.writer = SummaryWriter()
         self.dataset = dataset
         self.multi_criterion = torch.nn.BCELoss(reduce='sum')
         self.single_criterion = torch.nn.CrossEntropyLoss()
@@ -54,8 +55,9 @@ class Hybrid_Clf(object):
 
         return loss
 
-    def train(self):
-
+    def train(self, config=None):
+        if config is not None:
+            self.config = config
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
         model = model_loader(self.config['loss']['multi_loss'], **self.config["model"]).to(self.device)
@@ -63,16 +65,16 @@ class Hybrid_Clf(object):
         model = self._load_pre_trained_weights(model)
 
         # optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        optimizer = torch.optim.SGD(model.parameters(), lr=self.config['train']['lr'])
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                                last_epoch=-1)
 
-        model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
+        # model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
 
         # save config file
-        if self.config['save_model']:
-            _save_config_file(model_checkpoints_folder)
+        # if self.config['save_model']:
+        #     _save_config_file(model_checkpoints_folder)
 
         n_iter = 0
         valid_n_iter = 0
@@ -82,8 +84,8 @@ class Hybrid_Clf(object):
             for x, y in train_loader:
                 optimizer.zero_grad()
                 loss = self._step(x, y, model)
-                if n_iter % self.config['log_every_n_steps'] == 0:
-                    self.writer.add_scalar('train_loss', loss, global_step=n_iter)
+                # if n_iter % self.config['log_every_n_steps'] == 0:
+                #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
 
                 loss.backward()
 
@@ -101,18 +103,23 @@ class Hybrid_Clf(object):
                 if valid_loss < best_valid_loss:
                     # save the model weights
                     best_valid_loss = valid_loss
-                    if self.config['save_model']:
-                        torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
+                    # if self.config['save_model']:
+                    #     torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
 
-                self.writer.add_scalar('validation_loss', valid_loss, global_step=valid_n_iter)
+                # self.writer.add_scalar('validation_loss', valid_loss, global_step=valid_n_iter)
                 valid_n_iter += 1
 
             # warmup for the first 10 epochs
             if epoch_counter >= 10:
                 scheduler.step()
-            self.writer.add_scalar('cosine_lr_decay', scheduler.get_lr()[0], global_step=n_iter)
+            # self.writer.add_scalar('cosine_lr_decay', scheduler.get_lr()[0], global_step=n_iter)
             test_acc = self._validate(model, valid_loader, return_acc=True)
             print('Test accuracy is ', test_acc)
+            with tune.checkpoint_dir(epoch_counter) as checkpoint_dir:
+                path = os.path.join(checkpoint_dir, "checkpoint")
+                torch.save((model.state_dict(), optimizer.state_dict()), path)
+
+            tune.report(loss=best_valid_loss, accuracy=test_acc)
 
     def _load_pre_trained_weights(self, model):
         try:

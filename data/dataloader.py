@@ -10,34 +10,53 @@ Dataloader
 
 
 class Dataloader:
-    def __init__(self, batch_size, num_workers, name):
+    def __init__(self, data_dir, batch_size, num_workers, name, augmentation):
+        self.data_dir = data_dir
         self.dataset = name
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.augmentation = augmentation
 
     def get_data_loaders(self):
-        transform = transforms.Compose(
-            [transforms.ToTensor(),
-             ])
+        if self.augmentation:
+            transform_train = transforms.Compose([
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
+            transform_test = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
+        else:
+            transform_train = transforms.Compose(
+                [transforms.ToTensor(),
+                 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+                 ])
+            transform_test = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
         try:
             loader = getattr(self, self.dataset)
-            return loader(transform)
+            return loader(transform_train, transform_test)
         except AttributeError:
             raise ValueError('dataset is not available')
 
-    def cifar10(self, transform):
-        trainset = torchvision.datasets.CIFAR10(root='./datasets', train=True,
-                                                download=True, transform=transform)
+    def cifar10(self, transform_train, transform_test):
+        trainset = torchvision.datasets.CIFAR10(root=self.data_dir, train=True,
+                                                download=True, transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
                                                   shuffle=True, num_workers=self.num_workers)
 
-        testset = torchvision.datasets.CIFAR10(root='./datasets', train=False,
-                                               download=True, transform=transform)
+        testset = torchvision.datasets.CIFAR10(root=self.data_dir, train=False,
+                                               download=True, transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size,
                                                  shuffle=False, num_workers=self.num_workers)
         return trainloader, testloader
 
-    def imagenet(self, transform):
+    def imagenet(self, transform_train, transform_test):
         data_transform = transforms.Compose([
             transforms.RandomSizedCrop(224),
             transforms.ToTensor(),
@@ -56,14 +75,14 @@ class Dataloader:
         return trainloader, testloader
 
 
-    def stl10(self, transform):
-        trainset = torchvision.datasets.STL10(root='./datasets', split='train',
-                                                download=True, transform=transform)
+    def stl10(self, transform_train, transform_test):
+        trainset = torchvision.datasets.STL10(root=self.data_dir, split='train',
+                                                download=True, transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
                                                   shuffle=True, num_workers=self.num_workers)
 
-        testset = torchvision.datasets.STL10(root='./datasets', split='test',
-                                               download=True, transform=transform)
+        testset = torchvision.datasets.STL10(root=self.data_dir, split='test',
+                                               download=True, transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size,
                                                  shuffle=False, num_workers=self.num_workers)
         return trainloader, testloader

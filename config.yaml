@@ -7,6 +7,10 @@ weight_decay: 10e-6
 fp16_precision: False
 print_every_n_iters: 50
 save_model: False
+tune_params: True
+
+train:
+  lr: 0.01
 
 model:
   out_dim: 10
@@ -15,6 +19,7 @@ model:
 dataset:
   name: cifar10
   num_workers: 0
+  augmentation: True
 
 loss:
   temperature: 0.5
