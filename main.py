@@ -13,6 +13,7 @@ def tune_params(config):
     config['loss']['multi_loss_weight'] = tune.loguniform(1e-4, 1)
     config['loss']['single_loss_weight'] = tune.loguniform(1e-4, 1)
     config['loss']['multi_loss'] = tune.grid_search([True, False])
+    config['dataset']['augmentation'] = tune.grid_search([True, False])
     config['datapath'] = os.getcwd() + '/datasets'  # Please DO NOT change this
     return config
 
