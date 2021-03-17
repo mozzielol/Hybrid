@@ -5,12 +5,10 @@ fine_tune_from: None
 log_every_n_steps: 50
 weight_decay: 10e-6
 fp16_precision: False
-print_every_n_iters: 50
+print_every_n_iters: 10000
 save_model: False
 tune_params: True
-
-train:
-  lr: 0.01
+lr: 0.01
 
 model:
   out_dim: 10

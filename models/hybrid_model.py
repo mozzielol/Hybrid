@@ -6,6 +6,7 @@ import os
 import shutil
 import numpy as np
 from ray import tune
+from data.dataloader import Dataloader
 
 torch.manual_seed(0)
 
@@ -58,6 +59,7 @@ class Hybrid_Clf(object):
     def train(self, config=None):
         if config is not None:
             self.config = config
+            self.dataset = Dataloader(config['datapath'], config['batch_size'], **config['dataset'])
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
         model = model_loader(self.config['loss']['multi_loss'], **self.config["model"]).to(self.device)
@@ -65,7 +67,7 @@ class Hybrid_Clf(object):
         model = self._load_pre_trained_weights(model)
 
         # optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))
-        optimizer = torch.optim.SGD(model.parameters(), lr=self.config['train']['lr'])
+        optimizer = torch.optim.SGD(model.parameters(), lr=self.config['lr'])
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                                last_epoch=-1)

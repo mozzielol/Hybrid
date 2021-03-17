@@ -8,7 +8,11 @@ import os
 
 
 def tune_params(config):
-    config['train']['lr'] = tune.loguniform(1e-4, 1e-1)
+    config['lr'] = tune.loguniform(1e-4, 1e-1)
+    config['batch_size'] = tune.grid_search([1, 2, 3])
+    config['loss']['multi_loss_weight'] = tune.loguniform(1e-4, 1)
+    config['loss']['single_loss_weight'] = tune.loguniform(1e-4, 1)
+    config['datapath'] = os.getcwd() + '/datasets'  # Please DO NOT change this
     return config
 
 
@@ -34,7 +38,9 @@ def main():
             config=config,
             scheduler=scheduler,
             progress_reporter=reporter,
-            checkpoint_at_end=True)
+            checkpoint_at_end=True,
+            num_samples=10,
+            name='hybrid_tune')
         best_trial = result.get_best_trial("loss", "min", "last")
         print("Best trial config: {}".format(best_trial.config))
         print("Best trial final validation loss: {}".format(
