@@ -9,9 +9,10 @@ import os
 
 def tune_params(config):
     config['lr'] = tune.loguniform(1e-4, 1e-1)
-    config['batch_size'] = tune.grid_search([1, 2, 3])
+    config['batch_size'] = tune.grid_search([64, 128, 256])
     config['loss']['multi_loss_weight'] = tune.loguniform(1e-4, 1)
     config['loss']['single_loss_weight'] = tune.loguniform(1e-4, 1)
+    config['loss']['multi_loss'] = tune.grid_search([True, False])
     config['datapath'] = os.getcwd() + '/datasets'  # Please DO NOT change this
     return config
 
