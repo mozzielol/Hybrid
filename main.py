@@ -23,7 +23,7 @@ def main():
     dataset = Dataloader(os.getcwd() + '/datasets', config['batch_size'], **config['dataset'])
     simclr = Hybrid_Clf(dataset, config)
     if config['tune_params']:
-        max_num_epochs = 1
+        max_num_epochs = 100    #
         config = tune_params(config)
         scheduler = ASHAScheduler(
             metric="loss",

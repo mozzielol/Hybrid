@@ -39,7 +39,7 @@ class CNN(nn.Module):
 
         self.fc_layer = nn.Sequential(
             nn.Dropout(p=0.1),
-            nn.Linear(4096, 1024),
+            nn.Linear(36864, 1024),  # cifar10: 4096, stl10: 36864
             nn.ReLU(inplace=True),
             nn.Linear(1024, 512),
             nn.ReLU(inplace=True),
@@ -49,7 +49,7 @@ class CNN(nn.Module):
         if multi_loss:
             self.multi_fc_layer = nn.Sequential(
                 nn.Dropout(p=0.1),
-                nn.Linear(4096, 1024),
+                nn.Linear(36864, 1024), # cifar10: 4096, stl10: 36864
                 nn.ReLU(inplace=True),
                 nn.Linear(1024, 512),
                 nn.ReLU(inplace=True),

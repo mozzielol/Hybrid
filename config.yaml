@@ -1,5 +1,5 @@
 batch_size: 64
-epochs: 1
+epochs: 100
 eval_every_n_epochs: 1
 fine_tune_from: None
 log_every_n_steps: 50
@@ -7,7 +7,7 @@ weight_decay: 10e-6
 fp16_precision: False
 print_every_n_iters: 10000
 save_model: False
-tune_params: True
+tune_params: False
 lr: 0.01
 
 model:
@@ -15,7 +15,7 @@ model:
   base_model: "cnn"
 
 dataset:
-  name: cifar10
+  name: stl10
   num_workers: 0
   augmentation: True
 
