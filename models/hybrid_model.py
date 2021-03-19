@@ -62,7 +62,7 @@ class Hybrid_Clf(object):
             self.dataset = Dataloader(config['datapath'], config['batch_size'], **config['dataset'])
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
-        model = model_loader(self.config['loss']['multi_loss'], **self.config["model"]).to(self.device)
+        model = model_loader(self.config['dataset']['name'], self.config['loss']['multi_loss'], **self.config["model"]).to(self.device)
         print(model)
         model = self._load_pre_trained_weights(model)
 

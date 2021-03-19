@@ -25,7 +25,7 @@ def main():
     if config['tune_params']:
         config = tune_params(config)
         scheduler = ASHAScheduler(
-            metric="mean_accuracy",
+            metric="accuracy",
             mode="max",
             max_t=100,
             grace_period=10,

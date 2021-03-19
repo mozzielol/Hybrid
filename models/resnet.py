@@ -6,7 +6,7 @@ import torchvision.models as models
 
 class ResNet(nn.Module):
 
-    def __init__(self, multi_loss, base_model, out_dim):
+    def __init__(self, dataset, multi_loss, base_model, out_dim):
         super(ResNet, self).__init__()
         self.resnet_dict = {"resnet18": models.resnet18(pretrained=False),
                             "resnet50": models.resnet50(pretrained=False)}

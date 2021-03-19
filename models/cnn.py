@@ -5,7 +5,7 @@ import torch.nn as nn
 class CNN(nn.Module):
     """CNN."""
 
-    def __init__(self, multi_loss, base_model, out_dim):
+    def __init__(self, dataset, multi_loss, base_model, out_dim):
         """CNN Builder."""
         super(CNN, self).__init__()
 
@@ -36,10 +36,15 @@ class CNN(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
-
+        if dataset == 'cifar10':
+            intermediate_dim = 4096
+        elif dataset == 'stl10':
+            intermediate_dim = 36864
+        else:
+            raise ValueError('Please define the intermediate dimension ...')
         self.fc_layer = nn.Sequential(
             nn.Dropout(p=0.1),
-            nn.Linear(36864, 1024),  # cifar10: 4096, stl10: 36864
+            nn.Linear(intermediate_dim, 1024),  # cifar10: 4096, stl10: 36864
             nn.ReLU(inplace=True),
             nn.Linear(1024, 512),
             nn.ReLU(inplace=True),
@@ -49,7 +54,7 @@ class CNN(nn.Module):
         if multi_loss:
             self.multi_fc_layer = nn.Sequential(
                 nn.Dropout(p=0.1),
-                nn.Linear(36864, 1024), # cifar10: 4096, stl10: 36864
+                nn.Linear(intermediate_dim, 1024), # cifar10: 4096, stl10: 36864
                 nn.ReLU(inplace=True),
                 nn.Linear(1024, 512),
                 nn.ReLU(inplace=True),
