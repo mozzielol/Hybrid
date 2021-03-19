@@ -7,7 +7,7 @@ weight_decay: 10e-6
 fp16_precision: False
 print_every_n_iters: 10000
 save_model: False
-tune_params: False
+tune_params: True
 lr: 0.01
 
 model:

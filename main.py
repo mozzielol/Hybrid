@@ -23,14 +23,13 @@ def main():
     dataset = Dataloader(os.getcwd() + '/datasets', config['batch_size'], **config['dataset'])
     simclr = Hybrid_Clf(dataset, config)
     if config['tune_params']:
-        max_num_epochs = 100    #
         config = tune_params(config)
         scheduler = ASHAScheduler(
-            metric="loss",
-            mode="min",
-            max_t=max_num_epochs,
-            grace_period=1,
-            reduction_factor=2)
+            metric="mean_accuracy",
+            mode="max",
+            max_t=100,
+            grace_period=10,
+            reduction_factor=3)
         reporter = CLIReporter(
             # parameter_columns=["l1", "l2", "lr", "batch_size"],
             metric_columns=["loss", "accuracy", "training_iteration"])
