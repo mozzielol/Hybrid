@@ -15,7 +15,7 @@ model:
   base_model: "cnn"
 
 dataset:
-  name: stl10
+  name: cifar10
   num_workers: 0
   augmentation: True
 
@@ -24,4 +24,4 @@ loss:
   use_cosine_similarity: True
   multi_loss: True
   multi_loss_weight: 1.0
-  single_loss_weight: 1.0
+  single_loss_weight: 1.0  # discarded: use 1.0 - multi_loss_weight instead
