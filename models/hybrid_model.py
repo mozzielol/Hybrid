@@ -117,11 +117,11 @@ class Hybrid_Clf(object):
             # self.writer.add_scalar('cosine_lr_decay', scheduler.get_lr()[0], global_step=n_iter)
             test_acc = self._validate(model, valid_loader, return_acc=True)
             print('Test accuracy is ', test_acc)
-            with tune.checkpoint_dir(epoch_counter) as checkpoint_dir:
-                path = os.path.join(checkpoint_dir, "checkpoint")
-                torch.save((model.state_dict(), optimizer.state_dict()), path)
 
             tune.report(loss=best_valid_loss, accuracy=test_acc)
+        with tune.checkpoint_dir(n_iter) as checkpoint_dir:
+            path = os.path.join(checkpoint_dir, "checkpoint")
+            torch.save((model.state_dict(), optimizer.state_dict()), path)
 
     def _load_pre_trained_weights(self, model):
         try:
