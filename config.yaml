@@ -1,13 +1,13 @@
 batch_size: 64
-epochs: 100
+epochs: 10
 eval_every_n_epochs: 1
 fine_tune_from: None
 log_every_n_steps: 50
-weight_decay: 10e-6
+weight_decay: 1e-6
 fp16_precision: False
 print_every_n_iters: 10000
 save_model: False
-tune_params: True
+tune_params: False
 lr: 0.01
 
 model:
@@ -23,5 +23,5 @@ loss:
   temperature: 0.5
   use_cosine_similarity: True
   multi_loss: True
-  multi_loss_weight: 1.0
+  multi_loss_weight: 0
   single_loss_weight: 1.0  # discarded: use 1.0 - multi_loss_weight instead
