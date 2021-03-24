@@ -119,7 +119,7 @@ class Hybrid_Clf(object):
             print('Test accuracy is ', test_acc)
 
             if config['tune_params']:
-                tune.report(loss=best_valid_loss, accuracy=test_acc)
+                    tune.report(loss=best_valid_loss, accuracy=test_acc)
 
         if config['tune_params']:
             with tune.checkpoint_dir(n_iter) as checkpoint_dir:
