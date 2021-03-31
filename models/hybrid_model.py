@@ -66,12 +66,14 @@ class Hybrid_Clf(object):
         print(model)
         model = self._load_pre_trained_weights(model)
 
-        # optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))
-        optimizer = torch.optim.SGD(model.parameters(), lr=self.config['lr'])
-
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
-                                                               last_epoch=-1)
-
+        if config['optimizer'] == 'adam':
+            optimizer = torch.optim.Adam(model.parameters(), lr=self.config['lr'], weight_decay=eval(self.config['weight_decay']))
+        elif config['optimizer'] == 'sgd':
+            optimizer = torch.optim.SGD(model.parameters(), lr=self.config['lr'])
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
+                                                                   last_epoch=-1)
+        else:
+            raise ValueError('Please choose adam or sgd ...')
         # model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
 
         # save config file
@@ -112,7 +114,7 @@ class Hybrid_Clf(object):
                 valid_n_iter += 1
 
             # warmup for the first 10 epochs
-            if epoch_counter >= 10:
+            if epoch_counter >= 10 and config['optimizer'] == 'sgd':
                 scheduler.step()
             # self.writer.add_scalar('cosine_lr_decay', scheduler.get_lr()[0], global_step=n_iter)
             test_acc = self._validate(model, valid_loader, return_acc=True)
