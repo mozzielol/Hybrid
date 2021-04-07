@@ -9,11 +9,7 @@ from ray import tune
 from data.dataloader import Dataloader
 
 torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.benchmark = False
-torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.allow_tf32 = True
-
-torch.manual_seed(0)
 
 
 def _save_config_file(model_checkpoints_folder):
