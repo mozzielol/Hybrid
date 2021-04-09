@@ -25,6 +25,8 @@ def main():
     dataset = Dataloader(config['datapath'], config['batch_size'], **config['dataset'])
     simclr = Hybrid_Clf(dataset, config)
     if config['tune_params']:
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = False
         ray.init()
         config = tune_params(config)
         scheduler = ASHAScheduler(

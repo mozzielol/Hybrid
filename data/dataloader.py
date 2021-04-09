@@ -24,6 +24,9 @@ class Dataloader:
         self.standardization = standardization
 
     def get_data_loaders(self):
+        transform_test = [transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor()] \
+            if self.dataset.lower() == 'imagenet' else [transforms.ToTensor()]
+
         if self.augmentation:
             if self.dataset.lower() == 'cifar10':
                 crop = transforms.RandomCrop(32, padding=4)
@@ -34,10 +37,7 @@ class Dataloader:
 
             transform_train = [crop, transforms.RandomHorizontalFlip(), transforms.ToTensor()]
         else:
-            transform_train = [transforms.ToTensor()]
-
-        transform_test = [transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor()] \
-            if self.dataset.lower() == 'imagenet' else []
+            transform_train = transform_test
 
         if self.standardization:
             standardization_transform = transforms.Normalize(
