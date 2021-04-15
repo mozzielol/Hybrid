@@ -6,13 +6,16 @@ from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 import os
 import ray
+import torch
+import random
 
 
 def tune_params(config):
-    config['lr'] = tune.grid_search([1e-2, 1e-1])  # tune.loguniform(1e-4, 1e-1)
-    config['batch_size'] = tune.grid_search([64, 128, 256])
-    # config['loss']['multi_loss_weight'] = tune.grid_search([0, 0.25, 0.5, 0.75, 1])
-    # config['dataset']['augmentation'] = tune.grid_search([True, False])
+    config['lr'] = tune.grid_search([5e-4])  # tune.loguniform(1e-4, 1e-1)
+    config['batch_size'] = tune.grid_search([64, 128])
+    config['loss']['multi_loss_weight'] = tune.grid_search([0, .25, .5, .75])
+    config['dataset']['augmentation'] = tune.grid_search([True, False])
+    config['dataset']['standardization'] = tune.grid_search([True, False])
     return config
 
 
@@ -35,7 +38,7 @@ def main():
             metric_columns=["loss", "accuracy", "training_iteration"])
         result = tune.run(
             simclr.train,
-            resources_per_trial={"cpu": 1, "gpu": 0},
+            resources_per_trial={"cpu": 1, "gpu": 1},
             config=config,
             scheduler=scheduler,
             progress_reporter=reporter,
@@ -49,6 +52,15 @@ def main():
         print("Best trial final validation accuracy: {}".format(
             best_trial.last_result["accuracy"]))
     else:
+        # Reproducibility
+        seed = 2021
+        torch.manual_seed(seed)
+        random.seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.deterministic = True
+
         simclr.train(config=config)
 
 

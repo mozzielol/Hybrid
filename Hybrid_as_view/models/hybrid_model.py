@@ -8,7 +8,8 @@ import numpy as np
 from ray import tune
 from data.dataloader import Dataloader
 
-torch.manual_seed(0)
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
 
 def _save_config_file(model_checkpoints_folder):
