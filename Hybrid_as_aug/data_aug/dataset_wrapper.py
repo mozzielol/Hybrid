@@ -5,6 +5,7 @@ import torchvision.transforms as transforms
 from data_aug.gaussian_blur import GaussianBlur
 from torchvision import datasets
 from data_aug.hybrid import compose_hybrid_image
+from PIL import Image
 
 np.random.seed(0)
 
@@ -76,6 +77,7 @@ class SimCLRDataTransform(object):
                 sample = compose_hybrid_image(np.asarray(sample), np.asarray(self.hybrid_data[idx][0]))
             else:
                 sample = compose_hybrid_image(np.asarray(self.hybrid_data[idx][0]), np.asarray(sample))
+        sample = Image.fromarray(sample)
         xi = self.transform(sample)
         xj = self.transform(sample)
         return xi, xj
