@@ -1,3 +1,4 @@
+import os
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -25,7 +26,7 @@ class Dataloader:
 
     def get_data_loaders(self):
         transform_test = [transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor()] \
-            if self.dataset.lower() == 'imagenet' else [transforms.ToTensor()]
+            if self.dataset.lower().startswith('image') else [transforms.ToTensor()]
 
         if self.augmentation:
             if self.dataset.lower() == 'cifar10':
@@ -41,8 +42,8 @@ class Dataloader:
 
         if self.standardization:
             standardization_transform = transforms.Normalize(
-                    mean=(0.485, 0.456, 0.406) if self.dataset.lower() == 'imagenet' else (0.4914, 0.4822, 0.4465),
-                    std=(0.229, 0.224, 0.225) if self.dataset.lower() == 'imagenet' else (0.2023, 0.1994, 0.2010)
+                    mean=(0.485, 0.456, 0.406) if self.dataset.lower().startswith('image') else (0.4914, 0.4822, 0.4465),
+                    std=(0.229, 0.224, 0.225) if self.dataset.lower().startswith('image') else (0.2023, 0.1994, 0.2010)
                 )
             transform_train.append(standardization_transform)
             transform_test.append(standardization_transform)
@@ -89,6 +90,26 @@ class Dataloader:
 
         testset = torchvision.datasets.STL10(root=self.data_dir, split='test',
                                              download=True, transform=transform_test)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size,
+                                                 shuffle=False, num_workers=self.num_workers)
+        return trainloader, testloader
+
+    def imagenette(self, transform_train, transform_test):
+        dataset_dir = '/home/fantasie/Pictures/ImageNet/imagenette2-320'
+        trainset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'train'), transform=transform_train)
+        testset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'val'), transform=transform_test)
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
+                                                  shuffle=True, num_workers=self.num_workers)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size,
+                                                 shuffle=False, num_workers=self.num_workers)
+        return trainloader, testloader
+
+    def imagewoof(self, transform_train, transform_test):
+        dataset_dir = '/home/fantasie/Pictures/ImageNet/imagewoof2-320'
+        trainset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'train'), transform=transform_train)
+        testset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'val'), transform=transform_test)
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
+                                                  shuffle=True, num_workers=self.num_workers)
         testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size,
                                                  shuffle=False, num_workers=self.num_workers)
         return trainloader, testloader
