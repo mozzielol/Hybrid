@@ -42,9 +42,9 @@ class Dataloader:
 
         if self.standardization:
             standardization_transform = transforms.Normalize(
-                    mean=(0.485, 0.456, 0.406) if self.dataset.lower().startswith('image') else (0.4914, 0.4822, 0.4465),
-                    std=(0.229, 0.224, 0.225) if self.dataset.lower().startswith('image') else (0.2023, 0.1994, 0.2010)
-                )
+                mean=(0.485, 0.456, 0.406) if self.dataset.lower().startswith('image') else (0.4914, 0.4822, 0.4465),
+                std=(0.229, 0.224, 0.225) if self.dataset.lower().startswith('image') else (0.2023, 0.1994, 0.2010)
+            )
             transform_train.append(standardization_transform)
             transform_test.append(standardization_transform)
 

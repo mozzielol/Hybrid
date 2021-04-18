@@ -16,6 +16,7 @@ def tune_params(config):
     config['loss']['multi_loss_weight'] = tune.grid_search([0, .25, .5, .75])
     config['dataset']['augmentation'] = tune.grid_search([True, False])
     config['dataset']['standardization'] = tune.grid_search([True, False])
+    config['hybrid']['kernel'] = tune.grid_search([3, 9, 15])
     return config
 
 

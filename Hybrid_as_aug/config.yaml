@@ -7,7 +7,7 @@ weight_decay: 1e-6
 fp16_precision: False
 print_every_n_iters: 10000
 save_model: False
-tune_params: False
+tune_params: True
 lr: 0.0001
 optimizer: 'adam'
 model:
@@ -19,6 +19,9 @@ dataset:
   num_workers: 4
   augmentation: True
   standardization: True
+
+hybrid:
+  kernel: 3
 
 loss:
   temperature: 0.5

@@ -46,7 +46,7 @@ class Hybrid_Clf(object):
             loss = self.single_criterion(single_logits, sin_y) * (1 - self.config['loss']['multi_loss_weight'])
 
             # Multi loss
-            x, mul_y = get_hybrid_images(x, (3, 3), y, self.config['model']['out_dim'])
+            x, mul_y = get_hybrid_images(x, (self.config['hybrid']['kernel'],) * 2, y, self.config['model']['out_dim'])
             x = x.to(self.device)
             mul_y = mul_y.to(self.device) * self.config['loss']['multi_loss_weight']
             multi_logits = model.forward_multi(x)
