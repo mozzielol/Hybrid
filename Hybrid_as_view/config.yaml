@@ -1,28 +1,27 @@
-batch_size: 64
-epochs: 10
+batch_size: 128
+epochs: 80
 eval_every_n_epochs: 1
 fine_tune_from: None
 log_every_n_steps: 50
-weight_decay: 1e-6
+weight_decay: 10e-6
 fp16_precision: False
-print_every_n_iters: 10000
-save_model: False
-tune_params: True
-lr: 0.0001
-optimizer: 'adam'
+log_dir: hybrid_aug
+
+hybrid:
+  switch_on: True
+  return_origin: False
+
 model:
-  out_dim: 10
+  out_dim: 256
   base_model: "resnet18"
 
 dataset:
-  name: imagenet
+  s: 1
+  input_shape: (96,96,3)
   num_workers: 0
+  valid_size: 0.05
   augmentation: True
-  standardization: True
 
 loss:
   temperature: 0.5
   use_cosine_similarity: True
-  multi_loss: True
-  multi_loss_weight: 0
-  single_loss_weight: 1.0  # discarded: use 1.0 - multi_loss_weight instead
