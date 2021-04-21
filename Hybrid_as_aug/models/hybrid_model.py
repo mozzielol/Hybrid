@@ -43,7 +43,7 @@ class Hybrid_Clf(object):
         if self.config['loss']['multi_loss'] and self.config['loss']['multi_loss_weight'] > 0:
             # Single loss
             single_logits = model(sin_x)
-            loss = self.single_criterion(single_logits, sin_y) * (1 - self.config['loss']['multi_loss_weight'])
+            loss = self.single_criterion(single_logits, sin_y)
 
             # Multi loss
             x, mul_y = get_hybrid_images(x, (self.config['hybrid']['kernel'],) * 2, y, self.config['model']['out_dim'])

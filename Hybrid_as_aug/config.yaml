@@ -7,7 +7,7 @@ weight_decay: 1e-6
 fp16_precision: False
 print_every_n_iters: 10000
 save_model: False
-tune_params: True
+tune_params: False
 lr: 0.0001
 optimizer: 'adam'
 model:
@@ -15,10 +15,10 @@ model:
   base_model: "resnet18"
 
 dataset:
-  name: imagenette
-  num_workers: 4
+  name: stl10
+  num_workers: 0
   augmentation: True
-  standardization: True
+  standardization: False
 
 hybrid:
   kernel: 3
@@ -27,5 +27,5 @@ loss:
   temperature: 0.5
   use_cosine_similarity: True
   multi_loss: True
-  multi_loss_weight: 0
-  single_loss_weight: 1.0  # discarded: use 1.0 - multi_loss_weight instead
+  multi_loss_weight: 0.25
+  single_loss_weight: 1.0  # discarded: always use 1.0
