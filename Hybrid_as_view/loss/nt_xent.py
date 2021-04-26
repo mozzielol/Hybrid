@@ -4,7 +4,7 @@ import numpy as np
 
 class NTXentLoss(torch.nn.Module):
 
-    def __init__(self, device, batch_size, temperature, use_cosine_similarity):
+    def __init__(self, device, batch_size, temperature, use_cosine_similarity, float_loss):
         super(NTXentLoss, self).__init__()
         self.batch_size = batch_size
         self.temperature = temperature
@@ -12,7 +12,8 @@ class NTXentLoss(torch.nn.Module):
         self.softmax = torch.nn.Softmax(dim=-1)
         self.mask_samples_from_same_repr = self._get_correlated_mask().type(torch.bool)
         self.similarity_function = self._get_similarity_function(use_cosine_similarity)
-        self.criterion = torch.nn.CrossEntropyLoss(reduction="sum")
+        self.criterion = torch.nn.BCELoss(reduction="sum") if float_loss else torch.nn.CrossEntropyLoss(reduction="sum")
+        self.float_loss = float_loss
 
     def _get_similarity_function(self, use_cosine_similarity):
         if use_cosine_similarity:
@@ -44,22 +45,25 @@ class NTXentLoss(torch.nn.Module):
         v = self._cosine_similarity(x.unsqueeze(1), y.unsqueeze(0))
         return v
 
-    def forward(self, zis, zjs):
+    def forward(self, zis, zjs, labels=None):
         representations = torch.cat([zjs, zis], dim=0)
-
         similarity_matrix = self.similarity_function(representations, representations)
+        if self.float_loss:
+            assert labels is not None, 'Provide label if float loss is True ...'
+            logits = similarity_matrix
+        else:
+            # filter out the scores from the positive samples
+            l_pos = torch.diag(similarity_matrix, self.batch_size)
+            r_pos = torch.diag(similarity_matrix, -self.batch_size)
+            positives = torch.cat([l_pos, r_pos]).view(2 * self.batch_size, 1)
 
-        # filter out the scores from the positive samples
-        l_pos = torch.diag(similarity_matrix, self.batch_size)
-        r_pos = torch.diag(similarity_matrix, -self.batch_size)
-        positives = torch.cat([l_pos, r_pos]).view(2 * self.batch_size, 1)
+            negatives = similarity_matrix[self.mask_samples_from_same_repr].view(2 * self.batch_size, -1)
 
-        negatives = similarity_matrix[self.mask_samples_from_same_repr].view(2 * self.batch_size, -1)
+            logits = torch.cat((positives, negatives), dim=1)
+            logits /= self.temperature
 
-        logits = torch.cat((positives, negatives), dim=1)
-        logits /= self.temperature
-
-        labels = torch.zeros(2 * self.batch_size).to(self.device).long()
+            labels = torch.zeros(2 * self.batch_size).to(self.device).long()
         loss = self.criterion(logits, labels)
 
         return loss / (2 * self.batch_size)
+
