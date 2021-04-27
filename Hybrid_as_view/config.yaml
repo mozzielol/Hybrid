@@ -1,15 +1,15 @@
 batch_size: 128
-epochs: 80
+epochs: 20
 eval_every_n_epochs: 1
 fine_tune_from: None
 log_every_n_steps: 50
 weight_decay: 10e-6
 fp16_precision: False
-log_dir: hybrid_aug
+log_dir: normal
 
 hybrid:
   switch_on: True
-  return_origin: False
+  return_origin: True
 
 model:
   out_dim: 256
@@ -20,8 +20,9 @@ dataset:
   input_shape: (96,96,3)
   num_workers: 0
   valid_size: 0.05
-  augmentation: True
+  augmentation: False
 
 loss:
   temperature: 0.5
   use_cosine_similarity: True
+  float_loss: True
