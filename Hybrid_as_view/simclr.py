@@ -105,7 +105,7 @@ class SimCLR(object):
                 if np.random.random_sample() < self.config['hybrid']['probs']:
                     loss = self._step_hybrid(model, x_ori)
                 else:
-                    loss = self._step(model, xis, xjs, n_iter)
+                    loss = self._step(model, xis, xjs)
 
                 if n_iter % self.config['log_every_n_steps'] == 0:
                     self.writer.add_scalar('train_loss', loss, global_step=n_iter)

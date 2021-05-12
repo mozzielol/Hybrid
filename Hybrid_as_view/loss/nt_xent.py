@@ -49,8 +49,7 @@ class NTXentLoss(torch.nn.Module):
     def forward(self, zis, zjs, labels=None):
         representations = torch.cat([zjs, zis], dim=0)
         similarity_matrix = self.similarity_function(representations, representations)
-        if self.float_loss:
-            assert labels is not None, 'Provide label if float loss is True ...'
+        if labels is not None:
             logits = torch.clip(similarity_matrix, 0, 1)
             loss = self.bce_criterion(logits, labels)
         else:
