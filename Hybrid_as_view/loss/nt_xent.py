@@ -50,7 +50,7 @@ class NTXentLoss(torch.nn.Module):
         similarity_matrix = self.similarity_function(representations, representations)
         if self.float_loss:
             assert labels is not None, 'Provide label if float loss is True ...'
-            logits = similarity_matrix
+            logits = torch.clip(similarity_matrix, 0, 1)
         else:
             # filter out the scores from the positive samples
             l_pos = torch.diag(similarity_matrix, self.batch_size)
@@ -63,7 +63,7 @@ class NTXentLoss(torch.nn.Module):
             logits /= self.temperature
 
             labels = torch.zeros(2 * self.batch_size).to(self.device).long()
-        loss = self.criterion(logits, labels)
+            loss = self.criterion(logits, labels)
 
         return loss / (2 * self.batch_size)
 
