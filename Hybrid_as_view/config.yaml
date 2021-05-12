@@ -12,7 +12,7 @@ hybrid:
   return_origin: True
   kernel_size: [3, 3]
   weights: [0.5, 0.5]
-  probs: 1.0
+  probs: 0.5
 
 model:
   out_dim: 256
