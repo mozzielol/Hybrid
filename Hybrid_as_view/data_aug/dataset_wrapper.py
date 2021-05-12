@@ -23,9 +23,9 @@ class DataSetWrapper(object):
 
     def get_data_loaders(self):
         data_augment = self._get_simclr_pipeline_transform()
-        hybrid_data = datasets.STL10('./data', split='train+unlabeled', download=True) if self.use_hybrid else None
+        # hybrid_data = datasets.STL10('./data', split='train+unlabeled', download=True) if self.use_hybrid else None
         train_dataset = datasets.STL10('./data', split='train+unlabeled', download=True,
-                                       transform=SimCLRDataTransform(data_augment, hybrid_data))
+                                           transform=SimCLRDataTransform(data_augment))
 
         train_loader, valid_loader = self.get_train_validation_data_loaders(train_dataset)
         return train_loader, valid_loader
@@ -37,7 +37,7 @@ class DataSetWrapper(object):
             data_transforms = transforms.Compose([transforms.RandomResizedCrop(size=self.input_shape[0]),
                                                   transforms.RandomHorizontalFlip(),
                                                   transforms.RandomApply([color_jitter], p=0.8),
-                                                  transforms.RandomGrayscale(p=0.2),
+                                                  # transforms.RandomGrayscale(p=0.2),
                                                   GaussianBlur(kernel_size=int(0.1 * self.input_shape[0])),
                                                   transforms.ToTensor()])
         else:
@@ -66,18 +66,29 @@ class DataSetWrapper(object):
 
 
 class SimCLRDataTransform(object):
-    def __init__(self, transform, hybrid_data=None):
+    def __init__(self, transform):
         self.transform = transform
-        self.hybrid_data = hybrid_data
+        self.tensor_transformer = transforms.Compose([transforms.ToTensor()])
 
     def __call__(self, sample):
-        if self.hybrid_data is not None:
-            idx = np.random.randint(len(self.hybrid_data))
-            if np.random.random_sample() > 0.5:
-                sample = compose_hybrid_image(np.asarray(sample), np.asarray(self.hybrid_data[idx][0]))
-            else:
-                sample = compose_hybrid_image(np.asarray(self.hybrid_data[idx][0]), np.asarray(sample))
-        sample = Image.fromarray(sample)
         xi = self.transform(sample)
         xj = self.transform(sample)
-        return xi, xj
+        x = self.tensor_transformer(sample)
+        return xi, xj, x
+
+# class SimCLRDataTransform(object):
+#     def __init__(self, transform, hybrid_data=None):
+#         self.transform = transform
+#         self.hybrid_data = hybrid_data
+#
+#     def __call__(self, sample):
+#         if self.hybrid_data is not None:
+#             idx = np.random.randint(len(self.hybrid_data))
+#             if np.random.random_sample() > 0.5:
+#                 sample = compose_hybrid_image(np.asarray(sample), np.asarray(self.hybrid_data[idx][0]))
+#             else:
+#                 sample = compose_hybrid_image(np.asarray(self.hybrid_data[idx][0]), np.asarray(sample))
+#         sample = Image.fromarray(sample)
+#         xi = self.transform(sample)
+#         xj = self.transform(sample)
+#         return xi, xj

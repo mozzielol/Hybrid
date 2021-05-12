@@ -44,7 +44,8 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(9, 9), weights=(0.5, 
     :param weights: weights of hybrid and original images in the generated image list
     :return: a list of generated images (2N x D), as well as the similarity matrix (2N x 2N)
     """
-    weights = (abs(w) / sum(weights) for w in weights)
+    seed_images = seed_images.detach().numpy()
+    weights = [abs(w) / sum(weights) for w in weights]
     num_seed = len(seed_images)
     num_pure = round(2 * num_seed * weights[0])
     num_hybrid = 2 * num_seed - num_pure
@@ -59,7 +60,7 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(9, 9), weights=(0.5, 
     generated_images = []
     for indices in composition_indices:
         if len(indices) > 1:
-            hybrid_image = compose_hybrid_image(seed_images[indices[0]], seed_images[indices[1]], kernel=kernel)
+            hybrid_image = compose_hybrid_image(seed_images[indices[0]], seed_images[indices[1]], kernel=tuple(kernel))
             generated_images.append(hybrid_image)
         else:
             generated_images.append(seed_images[indices[0]])
@@ -91,4 +92,4 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(9, 9), weights=(0.5, 
             similarity_matrix[i, j] = measure_similarity(composition_indices[i], composition_indices[j])
             similarity_matrix[j, i] = measure_similarity(composition_indices[i], composition_indices[j])
 
-    return generated_images, similarity_matrix
+    return torch.Tensor(generated_images), torch.Tensor(similarity_matrix)
