@@ -87,7 +87,7 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(9, 9), weights=(0.5, 
             return 0.5 if _p_indices[0] in _h_indices else 0  # (A, B), A - 0.5; (A, B), C - 0
 
     similarity_matrix = np.zeros((2 * num_seed,) * 2)
-    for i in range(num_seed):
+    for i in range(len(composition_indices)):
         for j in range(i + 1):
             similarity_matrix[i, j] = measure_similarity(composition_indices[i], composition_indices[j])
             similarity_matrix[j, i] = measure_similarity(composition_indices[i], composition_indices[j])
