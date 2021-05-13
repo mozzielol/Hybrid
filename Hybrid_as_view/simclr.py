@@ -66,8 +66,8 @@ class SimCLR(object):
                                                                      self.config['hybrid']['kernel_size'],
                                                                      self.config['hybrid']['weights'])
         # get the representations and the projections
-        xis = hybrid_paris[:len(x)]
-        xjs = hybrid_paris[len(x):]
+        xis = hybrid_paris[:len(x)].to(self.device)
+        xjs = hybrid_paris[len(x):].to(self.device)
         return self._step(model, xis, xjs, sim_matrix)
 
     def train(self):
