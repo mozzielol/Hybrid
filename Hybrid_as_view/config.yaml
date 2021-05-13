@@ -10,6 +10,9 @@ log_dir: normal
 hybrid:
   switch_on: True
   return_origin: True
+  kernel_size: [3, 3]
+  weights: [0.5, 0.5]
+  probs: 0.5
 
 model:
   out_dim: 256
@@ -20,7 +23,7 @@ dataset:
   input_shape: (96,96,3)
   num_workers: 0
   valid_size: 0.05
-  augmentation: False
+  augmentation: True
 
 loss:
   temperature: 0.5

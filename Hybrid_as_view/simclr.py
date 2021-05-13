@@ -1,7 +1,7 @@
 import torch
 from models.resnet_simclr import ResNetSimCLR
 from torch.utils.tensorboard import SummaryWriter
-from data_aug.hybrid import get_hybrid_images
+from data_aug.hybrid import generate_pairs_with_hybrid_images
 import torch.nn.functional as F
 from loss.nt_xent import NTXentLoss
 import os
@@ -46,7 +46,7 @@ class SimCLR(object):
         print("Running on:", device)
         return device
 
-    def _step(self, model, xis, xjs, n_iter):
+    def _step(self, model, xis, xjs, label=None):
 
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
@@ -58,8 +58,17 @@ class SimCLR(object):
         zis = F.normalize(zis, dim=1)
         zjs = F.normalize(zjs, dim=1)
 
-        loss = self.nt_xent_criterion(zis, zjs)
+        loss = self.nt_xent_criterion(zis, zjs, label)
         return loss
+
+    def _step_hybrid(self, model, x):
+        hybrid_paris, sim_matrix = generate_pairs_with_hybrid_images(x,
+                                                                     self.config['hybrid']['kernel_size'],
+                                                                     self.config['hybrid']['weights'])
+        # get the representations and the projections
+        xis = hybrid_paris[:len(x)]
+        xjs = hybrid_paris[len(x):]
+        return self._step(model, xis, xjs, sim_matrix)
 
     def train(self):
 
@@ -88,12 +97,15 @@ class SimCLR(object):
         best_valid_loss = np.inf
         print('Training start ...')
         for epoch_counter in range(self.config['epochs']):
-            for (xis, xjs), _ in train_loader:
+            for (xis, xjs, x_ori), _ in train_loader:
                 optimizer.zero_grad()
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
 
-                loss = self._step(model, xis, xjs, n_iter)
+                if np.random.random_sample() < self.config['hybrid']['probs']:
+                    loss = self._step_hybrid(model, x_ori)
+                else:
+                    loss = self._step(model, xis, xjs)
 
                 if n_iter % self.config['log_every_n_steps'] == 0:
                     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
@@ -108,7 +120,7 @@ class SimCLR(object):
                 n_iter += 1
                 print(epoch_counter, loss.item(), end='\r')
             train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config)
-            print('Train acc: %.3f, Test acc: %.3f'%(train_acc, test_acc))
+            print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
             self.writer.add_scalar('train_acc', train_acc, global_step=valid_n_iter)
             self.writer.add_scalar('test_acc', test_acc, global_step=valid_n_iter)
             # validate the model if requested
@@ -145,7 +157,7 @@ class SimCLR(object):
 
             valid_loss = 0.0
             counter = 0
-            for (xis, xjs), _ in valid_loader:
+            for (xis, xjs, _), _ in valid_loader:
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
                 loss = self._step(model, xis, xjs, counter)
