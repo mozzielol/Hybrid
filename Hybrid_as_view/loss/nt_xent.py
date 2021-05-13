@@ -50,6 +50,7 @@ class NTXentLoss(torch.nn.Module):
         representations = torch.cat([zjs, zis], dim=0)
         similarity_matrix = self.similarity_function(representations, representations)
         if labels is not None:
+            labels = labels.to(self.device)
             logits = torch.clip(similarity_matrix, 0, 1)
             loss = self.bce_criterion(logits, labels)
         else:
