@@ -160,7 +160,7 @@ class SimCLR(object):
             for (xis, xjs, _), _ in valid_loader:
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
-                loss = self._step(model, xis, xjs, counter)
+                loss = self._step(model, xis, xjs)
                 valid_loss += loss.item()
                 counter += 1
             valid_loss /= counter
