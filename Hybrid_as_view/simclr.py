@@ -101,11 +101,9 @@ class SimCLR(object):
                 optimizer.zero_grad()
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
-
+                loss = self._step(model, xis, xjs)
                 if np.random.random_sample() < self.config['hybrid']['probs']:
-                    loss = self._step_hybrid(model, x_ori)
-                else:
-                    loss = self._step(model, xis, xjs)
+                    loss += self._step_hybrid(model, x_ori)
 
                 if n_iter % self.config['log_every_n_steps'] == 0:
                     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
@@ -137,7 +135,7 @@ class SimCLR(object):
             # warmup for the first 10 epochs
             if epoch_counter >= 10:
                 scheduler.step()
-            self.writer.add_scalar('cosine_lr_decay', scheduler.get_lr()[0], global_step=n_iter)
+            self.writer.add_scalar('cosine_lr_decay', scheduler.get_last_lr()[0], global_step=n_iter)
 
     def _load_pre_trained_weights(self, model):
         try:
