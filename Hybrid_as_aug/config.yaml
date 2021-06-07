@@ -15,10 +15,11 @@ model:
   base_model: "resnet18"
 
 dataset:
-  name: stl10
+  name: cifar10
   num_workers: 0
   augmentation: True
   standardization: False
+  few_rate: 0.2
 
 hybrid:
   kernel: 3

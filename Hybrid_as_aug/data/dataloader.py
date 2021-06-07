@@ -1,4 +1,6 @@
 import os
+import random
+
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -16,13 +18,14 @@ TODO:
 
 
 class Dataloader:
-    def __init__(self, data_dir, batch_size, num_workers, name, augmentation, standardization):
+    def __init__(self, data_dir, batch_size, num_workers, name, augmentation, standardization, few_rate=1.):
         self.data_dir = data_dir
         self.dataset = name
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.augmentation = augmentation
         self.standardization = standardization
+        self.few_rate = few_rate
 
     def get_data_loaders(self):
         transform_test = [transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor()] \
@@ -56,9 +59,17 @@ class Dataloader:
         except AttributeError:
             raise ValueError('dataset is not available')
 
+    def build_few_shot_dataset(self, dataset):
+        indices = random.sample(range(len(dataset)), round(self.few_rate * len(dataset)))
+        dataset.data = dataset.data[indices]
+        dataset.targets = [dataset.targets[idx] for idx in indices]
+        return dataset
+
     def cifar10(self, transform_train, transform_test):
         trainset = torchvision.datasets.CIFAR10(root=self.data_dir, train=True,
                                                 download=True, transform=transform_train)
+        trainset = self.build_few_shot_dataset(trainset) if 0 < self.few_rate < 1 else trainset
+
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
                                                   shuffle=True, num_workers=self.num_workers)
 
@@ -74,6 +85,7 @@ class Dataloader:
         train_set, val_set = torch.utils.data.random_split(
             imgs, [train_num, len(imgs) - train_num], generator=torch.Generator().manual_seed(2021)
         )
+        train_set = self.build_few_shot_dataset(train_set) if 0 < self.few_rate < 1 else train_set
         trainloader = torch.utils.data.DataLoader(Subset(train_set, transform_train),
                                                   batch_size=self.batch_size, shuffle=True,
                                                   num_workers=self.num_workers)
@@ -85,6 +97,7 @@ class Dataloader:
     def stl10(self, transform_train, transform_test):
         trainset = torchvision.datasets.STL10(root=self.data_dir, split='train',
                                               download=True, transform=transform_train)
+        trainset = self.build_few_shot_dataset(trainset) if 0 < self.few_rate < 1 else trainset
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
                                                   shuffle=True, num_workers=self.num_workers)
 
@@ -97,6 +110,7 @@ class Dataloader:
     def imagenette(self, transform_train, transform_test):
         dataset_dir = '/home/fantasie/Pictures/ImageNet/imagenette2-320'
         trainset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'train'), transform=transform_train)
+        trainset = self.build_few_shot_dataset(trainset) if 0 < self.few_rate < 1 else trainset
         testset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'val'), transform=transform_test)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
                                                   shuffle=True, num_workers=self.num_workers)
@@ -107,6 +121,7 @@ class Dataloader:
     def imagewoof(self, transform_train, transform_test):
         dataset_dir = '/home/fantasie/Pictures/ImageNet/imagewoof2-320'
         trainset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'train'), transform=transform_train)
+        trainset = self.build_few_shot_dataset(trainset) if 0 < self.few_rate < 1 else trainset
         testset = torchvision.datasets.ImageFolder(os.path.join(dataset_dir, 'val'), transform=transform_test)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size,
                                                   shuffle=True, num_workers=self.num_workers)
