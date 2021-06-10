@@ -53,7 +53,7 @@ class NTXentLoss(torch.nn.Module):
                 if x_idx == y_idx:
                     similarity_matrix[x_idx, y_idx] = 1.
                 else:
-                    similarity_matrix[x_idx, y_idx] = torch.mean(torch.square(x - y))
+                    similarity_matrix[x_idx, y_idx] = torch.exp(-torch.mean(torch.square(x - y)))
 
     def forward(self, zis, zjs, labels=None):
         representations = torch.cat([zjs, zis], dim=0)
