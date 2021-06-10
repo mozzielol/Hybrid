@@ -36,7 +36,7 @@ def get_hybrid_images(image_batch, origin=False, kernel=(9, 9)):
     return hybrid_images
 
 
-def generate_pairs_with_hybrid_images(seed_images, kernel=(9, 9), weights=(0.5, 0.5)):
+def generate_pairs_with_hybrid_images(seed_images, kernel=(15, 15), weights=(0.5, 0.5)):
     """
     Generate a batch of mixture of hybrid and original images, as well as the corresponding similarity matrix
     :param seed_images: a list of original seed images (N x D)
@@ -51,7 +51,7 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(9, 9), weights=(0.5, 
     num_hybrid = 2 * num_seed - num_pure
 
     # Compute list of indices, each element corresponds to the seed index/indices of a output image
-    pure_indices = [(idx,) for idx in np.random.choice(num_seed, num_pure, replace=True)]
+    pure_indices = [(idx,) for idx in np.random.choice(num_seed, num_pure, replace=False)]
     hybrid_indices = [tuple(np.random.choice(num_seed, 2, replace=False)) for i in range(num_hybrid)]
     composition_indices = pure_indices + hybrid_indices
     np.random.shuffle(composition_indices)
@@ -61,7 +61,7 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(9, 9), weights=(0.5, 
     for indices in composition_indices:
         if len(indices) > 1:
             hybrid_image = compose_hybrid_image(seed_images[indices[0]], seed_images[indices[1]], kernel=tuple(kernel))
-            generated_images.append(hybrid_image)
+            generated_images.append(hybrid_image.clip(0, 1))  # either clipping or renormalization
         else:
             generated_images.append(seed_images[indices[0]])
 
