@@ -12,7 +12,7 @@ class NTXentLoss(torch.nn.Module):
         self.softmax = torch.nn.Softmax(dim=-1)
         self.mask_samples_from_same_repr = self._get_correlated_mask().type(torch.bool)
         self.similarity_function = self._get_similarity_function(use_cosine_similarity)
-        self.bce_criterion = torch.nn.BCELoss(reduction="sum")
+        self.bce_criterion = torch.nn.MSELoss(reduction="sum")
         self.ce_criterion = torch.nn.CrossEntropyLoss(reduction="sum")
         self.float_loss = float_loss
 
