@@ -46,6 +46,15 @@ class NTXentLoss(torch.nn.Module):
         v = self._cosine_similarity(x.unsqueeze(1), y.unsqueeze(0))
         return v
 
+    def _matrix_similarity(self, x, y):
+        similarity_matrix = torch.zeros()
+        for x_idx, x_ele in x:
+            for y_idx, y_ele in y:
+                if x_idx == y_idx:
+                    similarity_matrix[x_idx, y_idx] = 1.
+                else:
+                    similarity_matrix[x_idx, y_idx] = torch.mean(torch.square(x - y))
+
     def forward(self, zis, zjs, labels=None):
         representations = torch.cat([zjs, zis], dim=0)
         similarity_matrix = self.similarity_function(representations, representations)
@@ -68,4 +77,3 @@ class NTXentLoss(torch.nn.Module):
 
             loss = self.ce_criterion(logits, labels)
         return loss / (2 * self.batch_size)
-
