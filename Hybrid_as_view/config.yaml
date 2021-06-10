@@ -27,5 +27,5 @@ dataset:
 
 loss:
   temperature: 0.5
-  use_cosine_similarity: True
+  use_cosine_similarity: False
   float_loss: True

@@ -21,7 +21,7 @@ class NTXentLoss(torch.nn.Module):
             self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
             return self._cosine_simililarity
         else:
-            return self._dot_simililarity
+            return self._matrix_similarity
 
     def _get_correlated_mask(self):
         diag = np.eye(2 * self.batch_size)
