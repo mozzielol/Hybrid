@@ -12,7 +12,7 @@ hybrid:
   return_origin: True
   kernel_size: [3, 3]
   weights: [0.5, 0.5]
-  probs: 0
+  probs: 0.5
 
 model:
   out_dim: 256
@@ -27,5 +27,5 @@ dataset:
 
 loss:
   temperature: 0.5
-  use_cosine_similarity: False
+  use_cosine_similarity: True
   mse_loss: True
