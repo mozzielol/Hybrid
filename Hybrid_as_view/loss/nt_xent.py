@@ -4,7 +4,7 @@ import numpy as np
 
 class NTXentLoss(torch.nn.Module):
 
-    def __init__(self, device, batch_size, temperature, use_cosine_similarity, float_loss):
+    def __init__(self, device, batch_size, temperature, use_cosine_similarity, mse_loss):
         super(NTXentLoss, self).__init__()
         self.batch_size = batch_size
         self.temperature = temperature
@@ -12,16 +12,17 @@ class NTXentLoss(torch.nn.Module):
         self.softmax = torch.nn.Softmax(dim=-1)
         self.mask_samples_from_same_repr = self._get_correlated_mask().type(torch.bool)
         self.similarity_function = self._get_similarity_function(use_cosine_similarity)
-        self.bce_criterion = torch.nn.MSELoss(reduction="sum")
+        self.bce_criterion = torch.nn.MSELoss(reduction="sum") if mse_loss else torch.nn.BCELoss(reduction='sum')
         self.ce_criterion = torch.nn.CrossEntropyLoss(reduction="sum")
-        self.float_loss = float_loss
+        self.use_cosine_similarity = use_cosine_similarity
+        self.mse_loss = mse_loss
 
     def _get_similarity_function(self, use_cosine_similarity):
         if use_cosine_similarity:
             self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
             return self._cosine_simililarity
         else:
-            return self._matrix_similarity
+            return self._distance_similarity
 
     def _get_correlated_mask(self):
         diag = np.eye(2 * self.batch_size)
@@ -46,25 +47,30 @@ class NTXentLoss(torch.nn.Module):
         v = self._cosine_similarity(x.unsqueeze(1), y.unsqueeze(0))
         return v
 
-    def _matrix_similarity(self, x, y, targets=None):
+    def _distance_similarity(self, x, y, targets=None):
         similarity_matrix = torch.zeros([x.size(0), x.size(0)])
-        for x_idx, x_ele in x:
-            for y_idx, y_ele in y:
+        for x_idx, x_ele in enumerate(x):
+            for y_idx, y_ele in enumerate(y):
                 if x_idx == y_idx:
                     similarity_matrix[x_idx, y_idx] = 1.
                 else:
                     if targets is None:
-                        similarity_matrix[x_idx, y_idx] = torch.exp(-torch.mean(torch.square(x - y)))
+                        similarity_matrix[x_idx, y_idx] = torch.exp(-torch.sqrt(torch.mean(torch.square(x - y))))
                     else:
-                        similarity_matrix[x_idx, y_idx] = torch.exp(-torch.mean(torch.square(x - y - targets[x_idx, y_idx])))
+                        similarity_matrix[x_idx, y_idx] = torch.exp(-torch.sqrt(torch.mean(torch.square(x - y - targets[x_idx, y_idx]))))
+
+        return similarity_matrix
 
     def forward(self, zis, zjs, labels=None):
         representations = torch.cat([zjs, zis], dim=0)
         similarity_matrix = self.similarity_function(representations, representations)
         if labels is not None:
             labels = labels.to(self.device)
-            logits = torch.clip(similarity_matrix, 0, 1)
-            loss = self.bce_criterion(logits, labels)
+            logits = torch.arccos(similarity_matrix) / np.pi if self.use_cosine_similarity else similarity_matrix
+            if self.mse_loss:
+                loss = self.bce_criterion(logits, labels)
+            else:
+                loss = self.bce_criterion(logits + 1 - labels, torch.heaviside(labels, torch.tensor([0])))
         else:
             # filter out the scores from the positive samples
             l_pos = torch.diag(similarity_matrix, self.batch_size)
