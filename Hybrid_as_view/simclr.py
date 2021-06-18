@@ -8,6 +8,7 @@ import os
 import shutil
 import sys
 from eval_model import _load_stl10, eval_trail
+from ray import tune
 
 apex_support = False
 try:
@@ -35,7 +36,7 @@ class SimCLR(object):
     def __init__(self, dataset, config):
         self.config = config
         self.device = self._get_device()
-        self.writer = SummaryWriter(log_dir='runs/' + config['log_dir'])
+        # self.writer = SummaryWriter(log_dir='runs/' + config['log_dir'])
         self.dataset = dataset
         self.nt_xent_criterion = NTXentLoss(self.device, config['batch_size'], **config['loss'])
         self.X_train, self.y_train = _load_stl10("train")
@@ -70,12 +71,15 @@ class SimCLR(object):
         xjs = hybrid_paris[len(x):].to(self.device)
         return self._step(model, xis, xjs, sim_matrix)
 
-    def train(self):
+    def train(self, config=None):
+
+        if config is not None:
+            self.config = config
 
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
-        model = self._load_pre_trained_weights(model)
+        # model = self._load_pre_trained_weights(model)
 
         optimizer = torch.optim.Adam(model.parameters(), 3e-4, weight_decay=eval(self.config['weight_decay']))
 
@@ -87,10 +91,10 @@ class SimCLR(object):
                                               opt_level='O2',
                                               keep_batchnorm_fp32=True)
 
-        model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
+        # model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
 
         # save config file
-        _save_config_file(model_checkpoints_folder)
+        # _save_config_file(model_checkpoints_folder)
 
         n_iter = 0
         valid_n_iter = 0
@@ -105,8 +109,8 @@ class SimCLR(object):
                 if np.random.random_sample() < self.config['hybrid']['probs']:
                     loss += self._step_hybrid(model, x_ori)
 
-                if n_iter % self.config['log_every_n_steps'] == 0:
-                    self.writer.add_scalar('train_loss', loss, global_step=n_iter)
+                # if n_iter % self.config['log_every_n_steps'] == 0:
+                #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
 
                 if apex_support and self.config['fp16_precision']:
                     with amp.scale_loss(loss, optimizer) as scaled_loss:
@@ -117,25 +121,29 @@ class SimCLR(object):
                 optimizer.step()
                 n_iter += 1
                 print(epoch_counter, loss.item())
-            train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config)
+            train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
             print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
-            self.writer.add_scalar('train_acc', train_acc, global_step=valid_n_iter)
-            self.writer.add_scalar('test_acc', test_acc, global_step=valid_n_iter)
             # validate the model if requested
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 valid_loss = self._validate(model, valid_loader)
                 if valid_loss < best_valid_loss:
                     # save the model weights
                     best_valid_loss = valid_loss
-                    torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
+                    # torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
 
-                self.writer.add_scalar('validation_loss', valid_loss, global_step=valid_n_iter)
                 valid_n_iter += 1
-
-            # warmup for the first 10 epochs
             if epoch_counter >= 10:
                 scheduler.step()
-            self.writer.add_scalar('cosine_lr_decay', scheduler.get_last_lr()[0], global_step=n_iter)
+
+            if config['tune_params']:
+                tune.report(loss=best_valid_loss, accuracy=test_acc)
+
+        if config['tune_params']:
+            with tune.checkpoint_dir(n_iter) as checkpoint_dir:
+                path = os.path.join(checkpoint_dir, "checkpoint")
+                torch.save((model.state_dict(), optimizer.state_dict()), path)
+
+            # warmup for the first 10 epochs
 
     def _load_pre_trained_weights(self, model):
         try:

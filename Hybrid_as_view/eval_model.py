@@ -11,11 +11,11 @@ from sklearn import preprocessing
 import importlib.util
 
 
-def next_batch(X, y, batch_size):
+def next_batch(X, y, batch_size, device):
     for i in range(0, X.shape[0], batch_size):
         X_batch = torch.tensor(X[i: i+batch_size]) / 255.
         y_batch = torch.tensor(y[i: i+batch_size])
-        yield X_batch.to('cuda'), y_batch.to('cuda')
+        yield X_batch.to(device), y_batch.to(device)
         
 def _load_stl10(prefix="train"):
     X_train = np.fromfile('./data/stl10_binary/' + prefix + '_X.bin', dtype=np.uint8)
@@ -26,10 +26,10 @@ def _load_stl10(prefix="train"):
 
     return X_train, y_train - 1
 
-def eval_trail(model, X_train, y_train, X_test, y_test, config):
+def eval_trail(model, X_train, y_train, X_test, y_test, config, device):
     X_train_feature = []
 
-    for batch_x, batch_y in next_batch(X_train, y_train, batch_size=config['batch_size']):
+    for batch_x, batch_y in next_batch(X_train, y_train, batch_size=config['batch_size'], device=device):
         features, _ = model(batch_x)
         X_train_feature.extend(features.cpu().detach().numpy())
 
@@ -37,7 +37,7 @@ def eval_trail(model, X_train, y_train, X_test, y_test, config):
     
     X_test_feature = []
 
-    for batch_x, batch_y in next_batch(X_test, y_test, batch_size=config['batch_size']):
+    for batch_x, batch_y in next_batch(X_test, y_test, batch_size=config['batch_size'], device=device):
         features, _ = model(batch_x)
         X_test_feature.extend(features.cpu().detach().numpy())
 
