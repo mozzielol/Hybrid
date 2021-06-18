@@ -13,9 +13,8 @@ import itertools
 
 def tune_params(config):
     config['hybrid']['probs'] = tune.grid_search([0, .25, .5, .75])
-    # config['dataset']['augmentation'] = tune.grid_search([True, False])
-    # config['dataset']['standardization'] = tune.grid_search([True, False])
-    # config['hybrid']['kernel'] = tune.grid_search([3, 9, 15])
+    config['hybrid']['kernel_size'] = tune.grid_search([[3, 3], [6, 6]])
+    config['hybrid']['weights'] = tune.grid_search([[0.5, 0.5], [0.2, 0.8]])
     return config
 
 
@@ -40,7 +39,7 @@ def main():
             metric_columns=["loss", "accuracy", "training_iteration"])
         result = tune.run(
             simclr.train,
-            resources_per_trial={"cpu": 1, "gpu": 1},
+            resources_per_trial={"cpu": 1, "gpu": 0},
             config=config,
             scheduler=scheduler,
             progress_reporter=reporter,
