@@ -105,9 +105,12 @@ class SimCLR(object):
                 optimizer.zero_grad()
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
-                loss = self._step(model, xis, xjs)
-                if np.random.random_sample() < self.config['hybrid']['probs']:
-                    loss += self._step_hybrid(model, x_ori)
+                if self.config['hybrid']['probs'] > 1:
+                    loss = self._step_hybrid(model, x_ori)
+                else:
+                    loss = self._step(model, xis, xjs)
+                    if np.random.random_sample() < self.config['hybrid']['probs']:
+                        loss += self._step_hybrid(model, x_ori)
 
                 # if n_iter % self.config['log_every_n_steps'] == 0:
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
