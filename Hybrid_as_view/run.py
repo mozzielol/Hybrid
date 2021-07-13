@@ -1,26 +1,27 @@
 from simclr import SimCLR
 import yaml
 from data_aug.dataset_wrapper import DataSetWrapper
-import itertools
+import itertools as it
 
+
+def search_config():
+    config = {}
+    config['probs'] = [0, .25, .5, .75]
+    config['kernel_size'] = [[3, 3], [6, 6]]
+    config['weights'] = [[0.5, 0.5], [0.2, 0.8]]
+    flat = [[(k, v) for v in vs] for k, vs in config.items()]
+    combinations = [dict(items) for items in it.product(*flat)]
+    return combinations
 
 def main():
     config = yaml.load(open("config.yaml", "r"), Loader=yaml.FullLoader)
     dataset = DataSetWrapper(config['hybrid']['switch_on'], config['batch_size'], **config['dataset'])
 
-    hybrid_switch = [True, False]
-    return_origin = [True, False]
-    augmentation = [True, False]
-    use_cosine_similarity = [True, False]
-
-    combinations = list(itertools.product(hybrid_switch, return_origin, augmentation, use_cosine_similarity))
+    combinations = search_config()
     for idx, c in enumerate(combinations):
         print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))
-        config['log_dir'] = 'trail_' + str(idx)
-        config['hybrid']['switch_on'] = c[0]
-        config['hybrid']['return_origin'] = c[1]
-        config['dataset']['augmentation'] = c[2]
-        config['loss']['use_cosine_similarity'] = c[3]
+        config['hybrid'] = c
+        print(config['hybrid'])
         simclr = SimCLR(dataset, config)
         simclr.train()
 

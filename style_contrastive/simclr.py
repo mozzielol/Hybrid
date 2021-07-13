@@ -104,16 +104,11 @@ class SimCLR(object):
         print('Training start ...')
         for epoch_counter in range(self.config['epochs']):
             start = timeit.default_timer()
-            for (xis, xjs, x_ori), _ in train_loader:
+            for (xis, xjs, _), _ in train_loader:
                 optimizer.zero_grad()
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
-                if self.config['hybrid']['probs'] > 1:
-                    loss = self._step_hybrid(model, x_ori)
-                else:
-                    loss = self._step(model, xis, xjs)
-                    if np.random.random_sample() < self.config['hybrid']['probs']:
-                        loss += self._step_hybrid(model, x_ori)
+                loss = self._step(model, xis, xjs)
 
                 # if n_iter % self.config['log_every_n_steps'] == 0:
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
