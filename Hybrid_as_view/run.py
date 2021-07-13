@@ -2,6 +2,7 @@ from simclr import SimCLR
 import yaml
 from data_aug.dataset_wrapper import DataSetWrapper
 import itertools as it
+from prettytable import PrettyTable
 
 
 def search_config():
@@ -18,12 +19,19 @@ def main():
     dataset = DataSetWrapper(config['hybrid']['switch_on'], config['batch_size'], **config['dataset'])
 
     combinations = search_config()
+    table = PrettyTable(['hybrid probability', 'kernel size', 'weights', 'test acc'])
+    keys = ['probs', 'kernel_size', 'weights']
     for idx, c in enumerate(combinations):
+        row = []
         print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))
         config['hybrid'] = c
-        print(config['hybrid'])
+        for k in keys:
+            row.append(c[k])
         simclr = SimCLR(dataset, config)
-        simclr.train()
+        test_acc = simclr.train()
+        row.append(test_acc)
+        table.add_row(row)
+    print(table)
 
 
 if __name__ == "__main__":

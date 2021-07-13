@@ -74,7 +74,6 @@ class SimCLR(object):
         return self._step(model, xis, xjs, sim_matrix)
 
     def train(self, config=None):
-
         if config is not None:
             self.config = config
 
@@ -101,7 +100,9 @@ class SimCLR(object):
         n_iter = 0
         valid_n_iter = 0
         best_valid_loss = np.inf
+        final_test_acc = 0.
         print('Training start ...')
+
         for epoch_counter in range(self.config['epochs']):
             start = timeit.default_timer()
             for (xis, xjs, x_ori), _ in train_loader:
@@ -128,6 +129,7 @@ class SimCLR(object):
                 n_iter += 1
                 print(epoch_counter, loss.item())
             train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
+            final_test_acc = test_acc
             print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
             # validate the model if requested
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
@@ -149,6 +151,7 @@ class SimCLR(object):
             with tune.checkpoint_dir(n_iter) as checkpoint_dir:
                 path = os.path.join(checkpoint_dir, "checkpoint")
                 torch.save((model.state_dict(), optimizer.state_dict()), path)
+        return final_test_acc
 
             # warmup for the first 10 epochs
 
