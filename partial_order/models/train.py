@@ -97,14 +97,12 @@ class Order_train(object):
             if epoch_counter >= 10:
                 scheduler.step()
 
-            if self.config['tune_params']:
-                tune.report(loss=best_valid_loss, accuracy=test_acc)
+            tune.report(loss=best_valid_loss, accuracy=test_acc)
             stop = timeit.default_timer()
             print('Epoch', epoch_counter, 'Time: ', stop - start)
-        if self.config['tune_params']:
-            with tune.checkpoint_dir(n_iter) as checkpoint_dir:
-                path = os.path.join(checkpoint_dir, "checkpoint")
-                torch.save((model.state_dict(), optimizer.state_dict()), path)
+        with tune.checkpoint_dir(n_iter) as checkpoint_dir:
+            path = os.path.join(checkpoint_dir, "checkpoint")
+            torch.save((model.state_dict(), optimizer.state_dict()), path)
         return final_test_acc
 
             # warmup for the first 10 epochs
