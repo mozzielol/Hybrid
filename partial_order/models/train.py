@@ -8,6 +8,8 @@ import timeit
 from loss.order_loss import Order_loss
 from ray import tune
 import os
+from data_aug.hybrid import get_hybrid_images
+
 
 torch.manual_seed(0)
 
@@ -65,6 +67,7 @@ class Order_train(object):
             start = timeit.default_timer()
             for (xis, xjs, x_anchor), _ in train_loader:
                 optimizer.zero_grad()
+                xjs = get_hybrid_images(xjs, **self.config['hybrid'])
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
                 x_anchor = x_anchor.to(self.device)
@@ -113,10 +116,11 @@ class Order_train(object):
 
             valid_loss = 0.0
             counter = 0
-            for (xis, xjs, _), _ in valid_loader:
+            for (xis, xjs, x_anchor), _ in valid_loader:
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
-                loss = self._step(model, xis, xjs)
+                x_anchor = x_anchor.to(self.device)
+                loss = self._step(model, xis, xjs, x_anchor)
                 valid_loss += loss.item()
                 counter += 1
             valid_loss /= counter

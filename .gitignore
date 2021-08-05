@@ -3,3 +3,8 @@
 Hybrid_as_view/runs/
 Hybrid_as_view/data/
 .DS_Store/
+partial_order/data/stl10_binary/test_X.bin
+partial_order/data/stl10_binary/test_y.bin
+partial_order/data/stl10_binary/train_X.bin
+partial_order/data/stl10_binary/train_y.bin
+partial_order/data/stl10_binary/unlabeled_X.bin

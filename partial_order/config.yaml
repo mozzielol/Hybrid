@@ -6,11 +6,8 @@ log_every_n_steps: 50
 weight_decay: 10e-6
 
 hybrid:
-  switch_on: True
-  return_origin: True
   kernel_size: [3, 3]
   weights: [0.5, 0.5]
-  probs: 0.5
 
 model:
   out_dim: 256

@@ -7,7 +7,6 @@ from prettytable import PrettyTable
 
 def search_config():
     config = {}
-    config['probs'] = [.5, 1.5]
     config['kernel_size'] = [[3, 3], [6, 6]]
     config['weights'] = [[0.5, 0.5], [0.2, 0.8]]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
