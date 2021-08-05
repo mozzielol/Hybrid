@@ -8,7 +8,7 @@ from prettytable import PrettyTable
 def search_config():
     config = {}
     config['kernel_size'] = [[3, 3], [6, 6]]
-    config['delta'] = [0.01, 0.1]
+    config['delta'] = [0.01, 0.1, 0.2, 0.5]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
     return combinations
