@@ -67,7 +67,7 @@ class Order_train(object):
             start = timeit.default_timer()
             for (xis, xjs, x_anchor), _ in train_loader:
                 optimizer.zero_grad()
-                xjs = get_hybrid_images(xjs, **self.config['hybrid'])
+                xjs = get_hybrid_images(xjs, self.config['hybrid']['kernel_size'])
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
                 x_anchor = x_anchor.to(self.device)

@@ -16,7 +16,7 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     return image_low + image_high
 
 
-def get_hybrid_images(image_batch, origin=False, kernel=(9, 9)):
+def get_hybrid_images(image_batch, kernel=(9, 9)):
     images = image_batch.permute(0, 2, 3, 1).cpu().numpy() if torch.is_tensor(image_batch) else image_batch
     hybrid_images = []
     # indices_pairs = random.choices(list(permutations(range(len(images)))), k=len(images))

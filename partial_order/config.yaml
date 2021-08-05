@@ -7,7 +7,6 @@ weight_decay: 10e-6
 
 hybrid:
   kernel_size: [3, 3]
-  weights: [0.5, 0.5]
 
 model:
   out_dim: 256
