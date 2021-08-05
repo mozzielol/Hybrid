@@ -23,9 +23,9 @@ def get_hybrid_images(image_batch, kernel=(9, 9)):
     indices_pairs = np.random.choice(np.arange(images.shape[0]), size=len(images))
     for i, j in enumerate(indices_pairs):
         if np.random.random_sample() > 0.5:
-            hybrid_images.append(compose_hybrid_image(images[i], images[j], kernel))
+            hybrid_images.append(compose_hybrid_image(images[i], images[j], tuple(kernel)))
         else:
-            hybrid_images.append(compose_hybrid_image(images[j], images[i], kernel))
+            hybrid_images.append(compose_hybrid_image(images[j], images[i], tuple(kernel)))
     hybrid_images = np.stack(hybrid_images)
     hybrid_images = torch.tensor(hybrid_images).permute(0, 3, 1, 2) if torch.is_tensor(
         image_batch) else hybrid_images
