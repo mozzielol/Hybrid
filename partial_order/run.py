@@ -8,7 +8,7 @@ from prettytable import PrettyTable
 def search_config():
     config = {}
     config['kernel_size'] = [[3, 3], [6, 6]]
-    config['weights'] = [[0.5, 0.5], [0.2, 0.8]]
+    config['delta'] = [0.01, 0.1]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
     return combinations
@@ -18,8 +18,8 @@ def main():
     dataset = DataSetWrapper(config['batch_size'], **config['dataset'])
 
     combinations = search_config()
-    table = PrettyTable(['kernel size', 'weights', 'test acc'])
-    keys = ['kernel_size', 'weights']
+    table = PrettyTable(['kernel size', 'delta', 'test acc'])
+    keys = ['kernel_size', 'delta']
     for idx, c in enumerate(combinations):
         row = []
         print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))

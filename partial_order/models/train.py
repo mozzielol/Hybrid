@@ -20,7 +20,7 @@ class Order_train(object):
         self.config = config
         self.device = get_device()
         # self.writer = SummaryWriter(log_dir='runs/' + config['log_dir'])
-        self.loss_func = Order_loss(**config['loss'])
+        self.loss_func = Order_loss(config['hybrid']['delta'], **config['loss'])
         self.dataset = dataset
         self.X_train, self.y_train = _load_stl10("train")
         self.X_test, self.y_test = _load_stl10("test")
