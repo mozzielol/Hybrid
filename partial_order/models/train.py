@@ -1,55 +1,29 @@
 import torch
 from models.resnet_simclr import ResNetSimCLR
-from torch.utils.tensorboard import SummaryWriter
-from data_aug.hybrid import generate_pairs_with_hybrid_images
 import torch.nn.functional as F
-from loss.nt_xent import NTXentLoss
-import os
-import shutil
-import sys
-from eval_model import _load_stl10, eval_trail
-from ray import tune
-import timeit
-
-
-apex_support = False
-try:
-    sys.path.append('./apex')
-    from apex import amp
-
-    apex_support = True
-except:
-    print("Please install apex for mixed precision training from: https://github.com/NVIDIA/apex")
-    apex_support = False
-
 import numpy as np
+from eval_model import _load_stl10, eval_trail
+from util.util import get_device
+import timeit
+from loss.order_loss import Order_loss
+from ray import tune
+import os
 
 torch.manual_seed(0)
 
 
-def _save_config_file(model_checkpoints_folder):
-    if not os.path.exists(model_checkpoints_folder):
-        os.makedirs(model_checkpoints_folder)
-        shutil.copy('./config.yaml', os.path.join(model_checkpoints_folder, 'config.yaml'))
-
-
-class SimCLR(object):
+class Order_train(object):
 
     def __init__(self, dataset, config):
         self.config = config
-        self.device = self._get_device()
+        self.device = get_device()
         # self.writer = SummaryWriter(log_dir='runs/' + config['log_dir'])
+        self.loss_func = Order_loss(**config['loss'])
         self.dataset = dataset
-        self.nt_xent_criterion = NTXentLoss(self.device, config['batch_size'], **config['loss'])
         self.X_train, self.y_train = _load_stl10("train")
         self.X_test, self.y_test = _load_stl10("test")
 
-    def _get_device(self):
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        print("Running on:", device)
-        return device
-
-    def _step(self, model, xis, xjs, label=None):
+    def _step(self, model, xis, xjs, x_anchor):
 
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
@@ -57,21 +31,15 @@ class SimCLR(object):
         # get the representations and the projections
         rjs, zjs = model(xjs)  # [N,C]
 
+        r_anchor, z_anchor = model(x_anchor)
+
         # normalize projection feature vectors
         zis = F.normalize(zis, dim=1)
         zjs = F.normalize(zjs, dim=1)
+        z_anchor = F.normalize(z_anchor, dim=1)
 
-        loss = self.nt_xent_criterion(zis, zjs, label)
+        loss = self.loss_func(zis, zjs, z_anchor)
         return loss
-
-    def _step_hybrid(self, model, x):
-        hybrid_paris, sim_matrix = generate_pairs_with_hybrid_images(x,
-                                                                     self.config['hybrid']['kernel_size'],
-                                                                     self.config['hybrid']['weights'])
-        # get the representations and the projections
-        xis = hybrid_paris[:len(x)].to(self.device)
-        xjs = hybrid_paris[len(x):].to(self.device)
-        return self._step(model, xis, xjs, sim_matrix)
 
     def train(self, config=None):
         if config is not None:
@@ -87,16 +55,6 @@ class SimCLR(object):
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                                last_epoch=-1)
 
-        if apex_support and self.config['fp16_precision']:
-            model, optimizer = amp.initialize(model, optimizer,
-                                              opt_level='O2',
-                                              keep_batchnorm_fp32=True)
-
-        # model_checkpoints_folder = os.path.join(self.writer.log_dir, 'checkpoints')
-
-        # save config file
-        # _save_config_file(model_checkpoints_folder)
-
         n_iter = 0
         valid_n_iter = 0
         best_valid_loss = np.inf
@@ -105,25 +63,18 @@ class SimCLR(object):
 
         for epoch_counter in range(self.config['epochs']):
             start = timeit.default_timer()
-            for (xis, xjs, x_ori), _ in train_loader:
+            for (xis, xjs, x_anchor), _ in train_loader:
                 optimizer.zero_grad()
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
-                if self.config['hybrid']['probs'] > 1:
-                    loss = self._step_hybrid(model, x_ori.to(self.device))
-                else:
-                    loss = self._step(model, xis, xjs)
-                    if np.random.random_sample() < self.config['hybrid']['probs']:
-                        loss += self._step_hybrid(model, x_ori)
+                x_anchor = x_anchor.to(self.device)
+                loss = self._step(model, xis, xjs, x_anchor)
+
 
                 # if n_iter % self.config['log_every_n_steps'] == 0:
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 loss = loss.to(self.device)
-                if apex_support and self.config['fp16_precision']:
-                    with amp.scale_loss(loss, optimizer) as scaled_loss:
-                        scaled_loss.backward()
-                else:
-                    loss.backward()
+                loss.backward()
 
                 optimizer.step()
                 n_iter += 1
@@ -154,17 +105,6 @@ class SimCLR(object):
         return final_test_acc
 
             # warmup for the first 10 epochs
-
-    def _load_pre_trained_weights(self, model):
-        try:
-            checkpoints_folder = os.path.join('./runs', self.config['fine_tune_from'], 'checkpoints')
-            state_dict = torch.load(os.path.join(checkpoints_folder, 'model.pth'))
-            model.load_state_dict(state_dict)
-            print("Loaded pre-trained model with success.")
-        except FileNotFoundError:
-            print("Pre-trained weights not found. Training from scratch.")
-
-        return model
 
     def _validate(self, model, valid_loader):
         # validation steps
