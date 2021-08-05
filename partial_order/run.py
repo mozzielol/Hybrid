@@ -18,8 +18,8 @@ def main():
     dataset = DataSetWrapper(config['hybrid']['switch_on'], config['batch_size'], **config['dataset'])
 
     combinations = search_config()
-    table = PrettyTable(['hybrid probability', 'kernel size', 'weights', 'test acc'])
-    keys = ['probs', 'kernel_size', 'weights']
+    table = PrettyTable(['kernel size', 'weights', 'test acc'])
+    keys = ['kernel_size', 'weights']
     for idx, c in enumerate(combinations):
         row = []
         print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))
