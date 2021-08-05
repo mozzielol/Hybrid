@@ -15,7 +15,7 @@ def search_config():
 
 def main():
     config = yaml.load(open("config.yaml", "r"), Loader=yaml.FullLoader)
-    dataset = DataSetWrapper(config['hybrid']['switch_on'], config['batch_size'], **config['dataset'])
+    dataset = DataSetWrapper(config['batch_size'], **config['dataset'])
 
     combinations = search_config()
     table = PrettyTable(['kernel size', 'weights', 'test acc'])

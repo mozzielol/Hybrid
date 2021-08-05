@@ -12,14 +12,13 @@ np.random.seed(0)
 
 class DataSetWrapper(object):
 
-    def __init__(self, use_hybrid, batch_size, num_workers, valid_size, input_shape, s, augmentation):
+    def __init__(self, batch_size, num_workers, valid_size, input_shape, s, augmentation):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.valid_size = valid_size
         self.s = s
         self.input_shape = eval(input_shape)
         self.augmentation = augmentation
-        self.use_hybrid = use_hybrid
 
     def get_data_loaders(self):
         data_augment = self._get_simclr_pipeline_transform()
