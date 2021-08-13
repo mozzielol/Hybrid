@@ -4,10 +4,12 @@ eval_every_n_epochs: 1
 fine_tune_from: None
 log_every_n_steps: 50
 weight_decay: 10e-6
+testing_phase: False
 
 hybrid:
   kernel_size: [3, 3]
   delta: 0.01
+  triple: 'difference'
 
 model:
   out_dim: 256

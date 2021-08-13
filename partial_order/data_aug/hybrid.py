@@ -16,20 +16,27 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     return image_low + image_high
 
 
-def get_hybrid_images(image_batch, kernel=(9, 9)):
+def get_hybrid_images(image_batch, kernel=(9, 9), return_sec_component=False, return_other=False):
+    """
+    :param image_batch: input images
+    :param kernel: kernel for hybrid images
+    :param return_sec_component: additionally return the second component which is used for constructing hybrid images
+    :param return_other: additionally return another images
+    :return:
+    """
     images = image_batch.permute(0, 2, 3, 1).cpu().numpy() if torch.is_tensor(image_batch) else image_batch
     hybrid_images = []
-    # indices_pairs = random.choices(list(permutations(range(len(images)))), k=len(images))
-    indices_pairs = np.random.choice(np.arange(images.shape[0]), size=len(images))
-    for i, j in enumerate(indices_pairs):
-        if np.random.random_sample() > 0.5:
-            hybrid_images.append(compose_hybrid_image(images[i], images[j], tuple(kernel)))
-        else:
-            hybrid_images.append(compose_hybrid_image(images[j], images[i], tuple(kernel)))
+    for i in np.arange(len(image_batch)):
+        j = 0 if i == len(image_batch) - 1 else i + 1
+        hybrid_images.append(compose_hybrid_image(images[i], images[j], tuple(kernel)))
     hybrid_images = np.stack(hybrid_images)
     hybrid_images = torch.tensor(hybrid_images).permute(0, 3, 1, 2) if torch.is_tensor(
         image_batch) else hybrid_images
 
+    if return_sec_component:
+        return hybrid_images, torch.tensor(np.roll(images, 1, axis=0)).permute(0, 3, 1, 2)
+    if return_other:
+        return hybrid_images, torch.tensor(np.roll(images, 2, axis=0)).permute(0, 3, 1, 2)
     return hybrid_images
 
 

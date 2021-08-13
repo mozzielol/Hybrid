@@ -65,12 +65,30 @@ class Order_train(object):
 
         for epoch_counter in range(self.config['epochs']):
             start = timeit.default_timer()
+            counter = 0
+            if epoch_counter == 1 and self.config['testing_phase']:
+                break
             for (xis, xjs, x_anchor), _ in train_loader:
+                if counter == 1 and self.config['testing_phase']:
+                    break
+                counter += 1
                 optimizer.zero_grad()
-                xjs = get_hybrid_images(xjs, self.config['hybrid']['kernel_size'])
-                xis = xis.to(self.device)
-                xjs = xjs.to(self.device)
-                x_anchor = x_anchor.to(self.device)
+                if self.config['hybrid']['triple'] == 'hybrid_augmented':
+                    xjs = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'])
+                    xis = xis.to(self.device)
+                    xjs = xjs.to(self.device)
+                    x_anchor = x_anchor.to(self.device)
+                elif self.config['hybrid']['triple'] == 'hybrid_sec_component':
+                    xis, xjs = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'], return_sec_component=True)
+                    xis = xis.to(self.device)
+                    xjs = xjs.to(self.device)
+                    x_anchor = x_anchor.to(self.device)
+                elif self.config['hybrid']['triple'] == 'hybrid_other':
+                    xis, xjs = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'], return_other=True)
+                    xis = xis.to(self.device)
+                    xjs = xjs.to(self.device)
+                    x_anchor = x_anchor.to(self.device)
+
                 loss = self._step(model, xis, xjs, x_anchor)
 
 
@@ -97,12 +115,10 @@ class Order_train(object):
             if epoch_counter >= 10:
                 scheduler.step()
 
-            tune.report(loss=best_valid_loss, accuracy=test_acc)
+            # tune.report(loss=best_valid_loss, accuracy=test_acc)
             stop = timeit.default_timer()
             print('Epoch', epoch_counter, 'Time: ', stop - start)
-        with tune.checkpoint_dir(n_iter) as checkpoint_dir:
-            path = os.path.join(checkpoint_dir, "checkpoint")
-            torch.save((model.state_dict(), optimizer.state_dict()), path)
+
         return final_test_acc
 
             # warmup for the first 10 epochs
