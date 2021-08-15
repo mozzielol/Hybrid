@@ -73,16 +73,16 @@ class Order_train(object):
                     break
                 counter += 1
                 optimizer.zero_grad()
-                w_A1_B, w_AB_C, w_AB_A1, w_AB_B = self.config['hybrid']['triple_weights']
+                w_A1_B, w_AB_C, w_A1_AB, w_AB_B = self.config['hybrid']['triple_weights']
                 AB, B, C = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'])
                 A1, AB, B, C = A1.to(self.device), AB.to(self.device), B.to(self.device), C.to(self.device)
                 loss = 0
                 if w_A1_B > 0:
-                    loss += w_A1_B * self._step(model, A1, AB, x_anchor)
+                    loss += w_A1_B * self._step(model, A1, B, x_anchor)
                 if w_AB_C > 0:
                     loss += w_AB_C * self._step(model, AB, C, x_anchor)
-                if w_AB_A1 > 0:
-                    loss += w_AB_A1 * self._step(model, A1, AB, x_anchor)
+                if w_A1_AB > 0:
+                    loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
                 if w_AB_B > 0:
                     loss += w_AB_B * self._step(model, AB, B, x_anchor)
 

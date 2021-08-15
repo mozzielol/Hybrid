@@ -18,10 +18,10 @@ The weights of triples follow the order:
 
 
 def set_triple_weights():
-    w_A1_B, w_AB_C, w_AB_A1, w_AB_B = np.linspace(0, 1, 2), np.linspace(0, 1, 2), np.linspace(0, 1, 2), np.linspace(0,
+    w_A1_B, w_AB_C, w_A1_AB, w_AB_B = np.linspace(0, 1, 2), np.linspace(0, 1, 2), np.linspace(0, 1, 2), np.linspace(0,
                                                                                                                     1,
                                                                                                                     2)
-    weightes = [list(items) for items in it.product(*[w_A1_B, w_AB_C, w_AB_A1, w_AB_B])]
+    weightes = [list(items) for items in it.product(*[w_A1_B, w_AB_C, w_A1_AB, w_AB_B])]
     weightes.remove([0, 0, 0, 0])
     return weightes
 
