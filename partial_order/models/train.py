@@ -68,29 +68,23 @@ class Order_train(object):
             counter = 0
             if epoch_counter == 1 and self.config['testing_phase']:
                 break
-            for (xis, xjs, x_anchor), _ in train_loader:
+            for (A1, x_anchor), _ in train_loader:
                 if counter == 1 and self.config['testing_phase']:
                     break
                 counter += 1
                 optimizer.zero_grad()
-                if self.config['hybrid']['triple'] == 'hybrid_augmented':
-                    xjs = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'])
-                    xis = xis.to(self.device)
-                    xjs = xjs.to(self.device)
-                    x_anchor = x_anchor.to(self.device)
-                elif self.config['hybrid']['triple'] == 'hybrid_sec_component':
-                    xis, xjs = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'], return_sec_component=True)
-                    xis = xis.to(self.device)
-                    xjs = xjs.to(self.device)
-                    x_anchor = x_anchor.to(self.device)
-                elif self.config['hybrid']['triple'] == 'hybrid_other':
-                    xis, xjs = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'], return_other=True)
-                    xis = xis.to(self.device)
-                    xjs = xjs.to(self.device)
-                    x_anchor = x_anchor.to(self.device)
-
-                loss = self._step(model, xis, xjs, x_anchor)
-
+                w_A1_B, w_AB_C, w_AB_A1, w_AB_B = self.config['hybrid']['triple_weights']
+                AB, B, C = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'])
+                A1, AB, B, C = A1.to(self.device), AB.to(self.device), B.to(self.device), C.to(self.device)
+                loss = 0
+                if w_A1_B > 0:
+                    loss += w_A1_B * self._step(model, A1, AB, x_anchor)
+                if w_AB_C > 0:
+                    loss += w_AB_C * self._step(model, AB, C, x_anchor)
+                if w_AB_A1 > 0:
+                    loss += w_AB_A1 * self._step(model, A1, AB, x_anchor)
+                if w_AB_B > 0:
+                    loss += w_AB_B * self._step(model, AB, B, x_anchor)
 
                 # if n_iter % self.config['log_every_n_steps'] == 0:
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
@@ -103,15 +97,6 @@ class Order_train(object):
             train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
             final_test_acc = test_acc
             print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
-            # validate the model if requested
-            if epoch_counter % self.config['eval_every_n_epochs'] == 0:
-                valid_loss = self._validate(model, valid_loader)
-                if valid_loss < best_valid_loss:
-                    # save the model weights
-                    best_valid_loss = valid_loss
-                    # torch.save(model.state_dict(), os.path.join(model_checkpoints_folder, 'model.pth'))
-
-                valid_n_iter += 1
             if epoch_counter >= 10:
                 scheduler.step()
 
@@ -130,7 +115,7 @@ class Order_train(object):
 
             valid_loss = 0.0
             counter = 0
-            for (xis, xjs, x_anchor), _ in valid_loader:
+            for (xis, x_anchor), _ in valid_loader:
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
                 x_anchor = x_anchor.to(self.device)

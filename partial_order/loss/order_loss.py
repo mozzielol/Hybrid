@@ -47,6 +47,12 @@ class Order_loss(torch.nn.Module):
         return similarity_matrix
 
     def forward(self, zis, zjs, z_anchor):
+        """
+        :param zis: similar to anchor
+        :param zjs: dissimilar to anchor
+        :param z_anchor: anchor image
+        :return:
+        """
         s1 = self.measure_similarity(zis, z_anchor)
         s2 = self.measure_similarity(zjs, z_anchor)
         loss = torch.mean(torch.clamp(s2 - s1 + self.delta, min=0))

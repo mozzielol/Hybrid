@@ -71,9 +71,9 @@ class SimCLRDataTransform(object):
 
     def __call__(self, sample):
         xi = self.transform(sample)
-        xj = self.transform(sample)
+        # xj = self.transform(sample)
         x = self.tensor_transformer(sample)
-        return xi, xj, x
+        return xi, x
 
 # class SimCLRDataTransform(object):
 #     def __init__(self, transform, hybrid_data=None):

@@ -16,7 +16,7 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     return image_low + image_high
 
 
-def get_hybrid_images(image_batch, kernel=(9, 9), return_sec_component=False, return_other=False):
+def get_hybrid_images(image_batch, kernel=(9, 9)):
     """
     :param image_batch: input images
     :param kernel: kernel for hybrid images
@@ -33,11 +33,8 @@ def get_hybrid_images(image_batch, kernel=(9, 9), return_sec_component=False, re
     hybrid_images = torch.tensor(hybrid_images).permute(0, 3, 1, 2) if torch.is_tensor(
         image_batch) else hybrid_images
 
-    if return_sec_component:
-        return hybrid_images, torch.tensor(np.roll(images, 1, axis=0)).permute(0, 3, 1, 2)
-    if return_other:
-        return hybrid_images, torch.tensor(np.roll(images, 2, axis=0)).permute(0, 3, 1, 2)
-    return hybrid_images
+    return hybrid_images, torch.tensor(np.roll(images, 1, axis=0)).permute(0, 3, 1, 2), \
+           torch.tensor(np.roll(images, 2, axis=0)).permute(0, 3, 1, 2)
 
 
 def generate_pairs_with_hybrid_images(seed_images, kernel=(15, 15), weights=(0.5, 0.5)):
