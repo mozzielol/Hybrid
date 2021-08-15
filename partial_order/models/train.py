@@ -76,6 +76,7 @@ class Order_train(object):
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B = self.config['hybrid']['triple_weights']
                 AB, B, C = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'])
                 A1, AB, B, C = A1.to(self.device), AB.to(self.device), B.to(self.device), C.to(self.device)
+                x_anchor = x_anchor.to(self.device)
                 loss = 0
                 if w_A1_B > 0:
                     loss += w_A1_B * self._step(model, A1, B, x_anchor)
@@ -93,7 +94,7 @@ class Order_train(object):
 
                 optimizer.step()
                 n_iter += 1
-                print(epoch_counter, loss.item())
+
             train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
             final_test_acc = test_acc
             print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
