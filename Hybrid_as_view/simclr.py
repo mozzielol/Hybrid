@@ -127,7 +127,7 @@ class SimCLR(object):
 
                 optimizer.step()
                 n_iter += 1
-                print(epoch_counter, loss.item())
+
             train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
             final_test_acc = test_acc
             print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
