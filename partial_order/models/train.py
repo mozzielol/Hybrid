@@ -52,7 +52,8 @@ class Order_train(object):
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
         # model = self._load_pre_trained_weights(model)
 
-        optimizer = torch.optim.Adam(model.parameters(), eval(self.config['hybrid']['learning_rate']), weight_decay=eval(self.config['weight_decay']))
+        optimizer = torch.optim.Adam(model.parameters(), self.config['hybrid']['learning_rate'],
+                                     weight_decay=eval(self.config['weight_decay']))
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                                last_epoch=-1)
@@ -91,7 +92,7 @@ class Order_train(object):
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 loss = loss.to(self.device)
                 loss.backward()
-
+                print('loss: ', loss.item(), end='\n')
                 optimizer.step()
                 n_iter += 1
 

@@ -55,5 +55,5 @@ class Order_loss(torch.nn.Module):
         """
         s1 = self.measure_similarity(zis, z_anchor)
         s2 = self.measure_similarity(zjs, z_anchor)
-        loss = torch.mean(torch.clamp(s2 - s1 + self.delta, min=0))
+        loss = - torch.mean(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
         return loss

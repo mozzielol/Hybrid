@@ -29,8 +29,8 @@ def set_triple_weights():
 def search_config():
     config = {}
     config['kernel_size'] = [[15, 15]]
-    config['delta'] = [0.1, 0.5, 0.8, 1.0]
-    config['triple_weights'] = [1, 1, 0, 1] # set_triple_weights()
+    config['delta'] = [0.01, 0.1]
+    config['triple_weights'] = [[1, 1, 0, 1]] # set_triple_weights()
     config['learning_rate'] = [1e-5, 1e-3]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
