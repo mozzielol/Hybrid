@@ -16,6 +16,15 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     return image_low + image_high
 
 
+def images_to_tensors(hybrid_images):
+    hybrid_images = np.stack(hybrid_images)
+    try:
+        hybrid_images = torch.tensor(hybrid_images).permute(0, 3, 1, 2)
+    except RuntimeError:
+        hybrid_images = torch.tensor(hybrid_images).permute(1, 0, 4, 2, 3)
+    return hybrid_images
+
+
 def get_hybrid_images(image_batch, kernel=(9, 9)):
     """
     :param image_batch: input images
@@ -26,15 +35,21 @@ def get_hybrid_images(image_batch, kernel=(9, 9)):
     """
     images = image_batch.permute(0, 2, 3, 1).cpu().numpy() if torch.is_tensor(image_batch) else image_batch
     hybrid_images = []
+    second_component = []
+    negative_paris = []
     for i in np.arange(len(image_batch)):
-        j = 0 if i == len(image_batch) - 1 else i + 1
-        hybrid_images.append(compose_hybrid_image(images[i], images[j], tuple(kernel)))
-    hybrid_images = np.stack(hybrid_images)
-    hybrid_images = torch.tensor(hybrid_images).permute(0, 3, 1, 2) if torch.is_tensor(
-        image_batch) else hybrid_images
+        image_indices = np.arange(len(image_batch))
+        image_indices = np.delete(image_indices, i)
+        j = np.random.choice(len(image_indices))
+        hybrid_images.append(compose_hybrid_image(images[i], images[image_indices[j]], tuple(kernel)))
+        second_component.append(images[j])
+        image_indices = np.delete(image_indices, j)
+        negative_paris.append(images[image_indices])
+    hybrid_images = images_to_tensors(hybrid_images)
+    second_component = images_to_tensors(second_component)
+    negative_paris = images_to_tensors(negative_paris)
 
-    return hybrid_images, torch.tensor(np.roll(images, 1, axis=0)).permute(0, 3, 1, 2), \
-           torch.tensor(np.roll(images, 2, axis=0)).permute(0, 3, 1, 2)
+    return hybrid_images, second_component, negative_paris
 
 
 def generate_pairs_with_hybrid_images(seed_images, kernel=(15, 15), weights=(0.5, 0.5)):

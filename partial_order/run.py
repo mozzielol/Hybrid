@@ -10,10 +10,10 @@ symbols:
     A - Anchor image
     A1 - augmented A
     B - second component of hybrid image
-    C - different image from A & B
+    C - rest of images in the batch except A & B
     
 The weights of triples follow the order:
-'A1_B', 'AB_C', 'AB_A1', 'AB_B'
+'A1_B', 'AB_C', 'AB_A1', 'AB_B', 'A1_C'
 """
 
 
@@ -30,7 +30,7 @@ def search_config():
     config = {}
     config['kernel_size'] = [[15, 15]]
     config['delta'] = [0.01, 0.1]
-    config['triple_weights'] = [[1, 1, 0, 1]] # set_triple_weights()
+    config['triple_weights'] = [[1, 0, 0, 0, 1]] # set_triple_weights()
     config['learning_rate'] = [1e-5, 1e-3]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
