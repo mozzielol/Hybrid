@@ -43,6 +43,14 @@ class Order_train(object):
         loss = self.loss_func(zis, zjs, z_anchor)
         return loss
 
+    def _step_by_indices(self, model, xis, x_anchor, indices):
+        ris, zis = model(xis)  # [N,C]
+        r_anchor, z_anchor = model(x_anchor)
+        zis = F.normalize(zis, dim=1)
+        z_anchor = F.normalize(z_anchor, dim=1)
+        loss = self.loss_func(zis, z_anchor, z_anchor, indices)
+        return loss
+
     def train(self, config=None):
         if config is not None:
             self.config = config
@@ -76,7 +84,7 @@ class Order_train(object):
                 optimizer.zero_grad()
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
                 AB, B, C = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'])
-                A1, AB, B, C = A1.to(self.device), AB.to(self.device), B.to(self.device), C.to(self.device)
+                A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
                 x_anchor = x_anchor.to(self.device)
                 loss = 0
                 if w_A1_B > 0:
@@ -89,8 +97,7 @@ class Order_train(object):
                 if w_AB_B > 0:
                     loss += w_AB_B * self._step(model, AB, B, x_anchor)
                 if w_A1_C > 0:
-                    for c in C:
-                        loss += w_A1_C * self._step(model, A1, c, x_anchor)
+                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, C)
 
                 # if n_iter % self.config['log_every_n_steps'] == 0:
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)

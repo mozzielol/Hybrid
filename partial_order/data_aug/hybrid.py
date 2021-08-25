@@ -43,11 +43,12 @@ def get_hybrid_images(image_batch, kernel=(9, 9)):
         j = np.random.choice(len(image_indices))
         hybrid_images.append(compose_hybrid_image(images[i], images[image_indices[j]], tuple(kernel)))
         second_component.append(images[j])
-        image_indices = np.delete(image_indices, j)
-        negative_paris.append(images[image_indices])
+        negative_paris.append(np.ones(len(image_batch), dtype=bool))
+        negative_paris[i][i] = False
+        negative_paris[i][image_indices[j]] = False
     hybrid_images = images_to_tensors(hybrid_images)
     second_component = images_to_tensors(second_component)
-    negative_paris = images_to_tensors(negative_paris)
+    negative_paris = np.array(negative_paris)
 
     return hybrid_images, second_component, negative_paris
 
