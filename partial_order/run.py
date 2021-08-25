@@ -42,8 +42,8 @@ def main():
     dataset = DataSetWrapper(config['batch_size'], **config['dataset'])
 
     combinations = search_config()
-    table = PrettyTable(['kernel size', 'delta', 'triple_weights', 'test acc'])
-    keys = ['kernel_size', 'delta', 'triple_weights']
+    table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'triple_weights', 'test acc'])
+    keys = ['kernel_size', 'delta', 'learning_rate', 'triple_weights']
     for idx, c in enumerate(combinations):
         row = []
         print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))
