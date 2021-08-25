@@ -54,7 +54,7 @@ class Order_loss(torch.nn.Module):
         :param z_anchor: anchor image
         :return:
         """
-        s1 = self.measure_similarity(zis, z_anchor)
+        s1 = torch.diag(self.measure_similarity(zis, z_anchor))
         s2 = self.measure_similarity(zjs, z_anchor)
         # loss = -torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
         differences = torch.clamp(s2 - s1 + self.delta, min=0)
