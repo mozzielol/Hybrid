@@ -8,6 +8,7 @@ class Order_loss(torch.nn.Module):
         super(Order_loss, self).__init__()
         self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
         self.measure_similarity = self._get_similarity_function(use_cosine_similarity)
+        self.criterion = torch.nn.MSELoss(reduction='sum')
         self.delta = delta
 
     def _get_similarity_function(self, use_cosine_similarity):
@@ -53,7 +54,9 @@ class Order_loss(torch.nn.Module):
         :param z_anchor: anchor image
         :return:
         """
-        s1 = self.measure_similarity(zis, z_anchor)[indices]
-        s2 = self.measure_similarity(zjs, z_anchor)[indices]
-        loss = - torch.mean(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
+        s1 = self.measure_similarity(zis, z_anchor)
+        s2 = self.measure_similarity(zjs, z_anchor)
+        # loss = -torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
+        differences = torch.clamp(s2 - s1 + self.delta, min=0)
+        loss = self.criterion(differences, torch.zeros_like(differences))
         return loss
