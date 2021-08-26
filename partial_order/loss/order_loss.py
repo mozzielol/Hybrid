@@ -47,7 +47,7 @@ class Order_loss(torch.nn.Module):
 
         return similarity_matrix
 
-    def forward(self, zis, zjs, z_anchor, indices=None):
+    def forward(self, zis, zjs, z_anchor, single_pair=False):
         """
         :param zis: similar to anchor
         :param zjs: dissimilar to anchor
@@ -55,8 +55,12 @@ class Order_loss(torch.nn.Module):
         :return:
         """
         s1 = torch.diag(self.measure_similarity(zis, z_anchor))
-        s2 = self.measure_similarity(zjs, z_anchor)
-        # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
-        differences = torch.clamp(s2 - s1.reshape(-1, 1) + self.delta, min=0)
+        if single_pair:
+            s2 = torch.diag(self.measure_similarity(zjs, z_anchor))
+            differences = torch.clamp(s2 - s1 + self.delta, min=0)
+        else:
+            s2 = self.measure_similarity(zjs, z_anchor)
+            # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
+            differences = torch.clamp(s2 - s1.reshape(-1, 1) + self.delta, min=0)
         loss = self.criterion(differences, torch.zeros_like(differences))
         return loss
