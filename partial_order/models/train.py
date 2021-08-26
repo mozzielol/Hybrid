@@ -40,15 +40,15 @@ class Order_train(object):
         zjs = F.normalize(zjs, dim=1)
         z_anchor = F.normalize(z_anchor, dim=1)
 
-        loss = self.loss_func(zis, zjs, z_anchor)
+        loss = self.loss_func(zis, zjs, z_anchor, True)
         return loss
 
-    def _step_by_indices(self, model, xis, x_anchor, single_pair):
+    def _step_by_indices(self, model, xis, x_anchor):
         ris, zis = model(xis)  # [N,C]
         r_anchor, z_anchor = model(x_anchor)
         zis = F.normalize(zis, dim=1)
         z_anchor = F.normalize(z_anchor, dim=1)
-        loss = self.loss_func(zis, z_anchor, z_anchor, single_pair)
+        loss = self.loss_func(zis, z_anchor, z_anchor)
         return loss
 
     def train(self, config=None):
@@ -88,15 +88,15 @@ class Order_train(object):
                 x_anchor = x_anchor.to(self.device)
                 loss = 0
                 if w_A1_B > 0:
-                    loss += w_A1_B * self._step(model, A1, B, x_anchor, True)
+                    loss += w_A1_B * self._step(model, A1, B, x_anchor)
                 if w_AB_C > 0:
-                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, C)
+                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor)
                 if w_A1_AB > 0:
-                    loss += w_A1_AB * self._step(model, A1, AB, x_anchor, True)
+                    loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
                 if w_AB_B > 0:
-                    loss += w_AB_B * self._step(model, AB, B, x_anchor, True)
+                    loss += w_AB_B * self._step(model, AB, B, x_anchor)
                 if w_A1_C > 0:
-                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, C)
+                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor)
 
                 # if n_iter % self.config['log_every_n_steps'] == 0:
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
