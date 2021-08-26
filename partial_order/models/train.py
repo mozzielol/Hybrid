@@ -90,8 +90,7 @@ class Order_train(object):
                 if w_A1_B > 0:
                     loss += w_A1_B * self._step(model, A1, B, x_anchor)
                 if w_AB_C > 0:
-                    for c in C:
-                        loss += w_AB_C * self._step(model, AB, c, x_anchor)
+                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, C)
                 if w_A1_AB > 0:
                     loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
                 if w_AB_B > 0:
