@@ -102,7 +102,7 @@ class Order_train(object):
                 #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 loss = loss.to(self.device)
                 loss.backward()
-                print('loss: ', loss.item(), end='\n')
+
                 optimizer.step()
                 n_iter += 1
 

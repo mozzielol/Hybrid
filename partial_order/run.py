@@ -17,21 +17,19 @@ The weights of triples follow the order:
 """
 
 
-def set_triple_weights():
-    w_A1_B, w_AB_C, w_A1_AB, w_AB_B = np.linspace(0, 1, 2), np.linspace(0, 1, 2), np.linspace(0, 1, 2), np.linspace(0,
-                                                                                                                    1,
-                                                                                                                    2)
-    weightes = [list(items) for items in it.product(*[w_A1_B, w_AB_C, w_A1_AB, w_AB_B])]
-    weightes.remove([0, 0, 0, 0])
-    return weightes
+def set_triplet_weights():
+    triplet_weights = (np.linspace(0, 1, 2), ) * 5
+    weights = [list(items) for items in it.product(*triplet_weights)]
+    weights.remove([0, 0, 0, 0, 0])
+    return weights
 
 
 def search_config():
     config = {}
     config['kernel_size'] = [[15, 15]]
-    config['delta'] = [0.01, 0.1]
-    config['triple_weights'] = [[1, 0, 0, 0, 1]] # set_triple_weights()
-    config['learning_rate'] = [1e-5, 1e-3]
+    config['delta'] = [0.1]
+    config['triple_weights'] = set_triplet_weights()
+    config['learning_rate'] = [1e-3]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
     return combinations
