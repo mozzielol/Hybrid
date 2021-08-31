@@ -10,7 +10,7 @@ hybrid:
   kernel_size: [3, 3]
   delta: 0.01
   triple_weights: [1, 1, 1, 1]
-  learning_rate: 1e-5
+  learning_rate: 0.0003
 
 model:
   out_dim: 128
