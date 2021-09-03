@@ -38,7 +38,7 @@ def get_gaussian_kernel(kernel_size=3, sigma=2, channels=3):
 
     return gaussian_filter
 
-gaussian_blur = get_gaussian_kernel(kernel_size=9)
+gaussian_blur = get_gaussian_kernel(kernel_size=9).to(get_device())
 
 def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     """
@@ -48,10 +48,10 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     :param kernel: kernel size of Gaussian blur
     :return: hybrid image, shape (H x W x 3)
     """
-    image_low_pad = torch.nn.functional.pad(src_low, (4, 4, 4, 4), mode='reflect')
-    image_high_pad = torch.nn.functional.pad(src_high, (4, 4, 4, 4),mode='reflect')
-    image_low = gaussian_blur(image_low_pad)
-    image_high = gaussian_blur(image_high_pad)
+    image_low_pad = torch.nn.functional.pad(src_low, (4, 4, 4, 4), mode='reflect').to(get_device())
+    image_high_pad = torch.nn.functional.pad(src_high, (4, 4, 4, 4),mode='reflect').to(get_device())
+    image_low = gaussian_blur(image_low_pad).to(get_device())
+    image_high = gaussian_blur(image_high_pad).to(get_device())
     return image_low + image_high
 
 
