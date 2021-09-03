@@ -83,7 +83,7 @@ class Order_train(object):
                 counter += 1
                 optimizer.zero_grad()
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
-                AB, B, C = get_hybrid_images(x_anchor, self.config['hybrid']['kernel_size'])
+                AB, B, C = get_hybrid_images(x_anchor.to(self.device), self.config['hybrid']['kernel_size'])
                 A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
                 x_anchor = x_anchor.to(self.device)
                 loss = 0

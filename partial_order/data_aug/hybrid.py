@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import torch
 import math
+from util.util import get_device
 
 def get_gaussian_kernel(kernel_size=3, sigma=2, channels=3):
     # Create a x, y coordinate grid of shape (kernel_size, kernel_size, 2)
@@ -27,7 +28,7 @@ def get_gaussian_kernel(kernel_size=3, sigma=2, channels=3):
 
     # Reshape to 2d depthwise convolutional weight
     gaussian_kernel = gaussian_kernel.view(1, 1, kernel_size, kernel_size)
-    gaussian_kernel = gaussian_kernel.repeat(channels, 1, 1, 1)
+    gaussian_kernel = gaussian_kernel.repeat(channels, 1, 1, 1).to(get_device())
 
     gaussian_filter = torch.nn.Conv2d(in_channels=channels, out_channels=channels,
                                 kernel_size=kernel_size, groups=channels, bias=False)
