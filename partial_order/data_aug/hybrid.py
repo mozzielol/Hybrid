@@ -47,12 +47,10 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     :param kernel: kernel size of Gaussian blur
     :return: hybrid image, shape (H x W x 3)
     """
-    # image_low = cv2.GaussianBlur(src_low, kernel, 0)
-    # image_high = src_high - cv2.GaussianBlur(src_high, kernel, 0)
     image_low_pad = torch.nn.functional.pad(src_low, (4, 4, 4, 4), mode='reflect')
     image_high_pad = torch.nn.functional.pad(src_high, (4, 4, 4, 4),mode='reflect')
-    image_low = gaussian_blur(image_low_pad.unsqueeze(0))
-    image_high = gaussian_blur(image_high_pad.unsqueeze(0))
+    image_low = gaussian_blur(image_low_pad)
+    image_high = gaussian_blur(image_high_pad)
     return image_low + image_high
 
 
@@ -74,20 +72,19 @@ def get_hybrid_images(image_batch, kernel=(9, 9)):
     :return:
     """
     images = image_batch
-    hybrid_images = []
-    second_component = []
     negative_paris = []
+
+    idxs = []
     for i in np.arange(len(image_batch)):
         image_indices = np.arange(len(image_batch))
         image_indices = np.delete(image_indices, i)
         j = np.random.choice(len(image_indices))
-        hybrid_images.append(compose_hybrid_image(images[i], images[image_indices[j]], tuple(kernel)))
-        second_component.append(images[j])
+        idxs.append(j)
         negative_paris.append(np.ones(len(image_batch), dtype=bool))
         negative_paris[i][i] = False
         negative_paris[i][image_indices[j]] = False
-    hybrid_images = torch.vstack(hybrid_images)
-    second_component = torch.vstack(second_component)
+    hybrid_images = compose_hybrid_image(images, images[idxs])
+    second_component = images[idxs]
     negative_paris = np.array(negative_paris)
 
     return hybrid_images, second_component, negative_paris
