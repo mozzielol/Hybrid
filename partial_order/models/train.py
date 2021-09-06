@@ -6,8 +6,6 @@ from eval_model import _load_stl10, eval_trail
 from util.util import get_device
 import timeit
 from loss.order_loss import Order_loss
-from ray import tune
-import os
 from data_aug.hybrid import get_hybrid_images
 
 
