@@ -1,5 +1,4 @@
 import numpy as np
-from util.util import get_device
 import math
 import numbers
 import torch
@@ -72,9 +71,7 @@ class GaussianSmoothing(nn.Module):
         """
         return self.conv(input, weight=self.weight, groups=self.groups)
 
-gaussian_blur = GaussianSmoothing(3, 15, 2).to(get_device())
-
-def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
+def compose_hybrid_image(gaussian_blur, src_low, src_high, kernel=(9, 9)):
     """
     Compose a hybrid image based on a pair of inputs specifying the low and high frequency components
     :param src_low: source image that contains the low frequency component, shape (H x W x 3)
@@ -82,10 +79,10 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9)):
     :param kernel: kernel size of Gaussian blur
     :return: hybrid image, shape (H x W x 3)
     """
-    image_low_pad = torch.nn.functional.pad(src_low, (4, 4, 4, 4), mode='reflect').to(get_device())
-    image_high_pad = torch.nn.functional.pad(src_high, (4, 4, 4, 4),mode='reflect').to(get_device())
-    image_low = gaussian_blur(image_low_pad).to(get_device())
-    image_high = gaussian_blur(image_high_pad).to(get_device())
+    image_low_pad = torch.nn.functional.pad(src_low, (4, 4, 4, 4), mode='reflect')
+    image_high_pad = torch.nn.functional.pad(src_high, (4, 4, 4, 4),mode='reflect')
+    image_low = gaussian_blur(image_low_pad)
+    image_high = gaussian_blur(image_high_pad)
     return image_low + image_high
 
 
@@ -98,7 +95,7 @@ def images_to_tensors(hybrid_images):
     return hybrid_images
 
 
-def get_hybrid_images(image_batch, kernel=(9, 9)):
+def get_hybrid_images(gaussian_blur, image_batch, kernel=(9, 9)):
     """
     :param image_batch: input images
     :param kernel: kernel for hybrid images
@@ -118,7 +115,7 @@ def get_hybrid_images(image_batch, kernel=(9, 9)):
         negative_paris.append(np.ones(len(image_batch), dtype=bool))
         negative_paris[i][i] = False
         negative_paris[i][image_indices[j]] = False
-    hybrid_images = compose_hybrid_image(images, images[idxs])
+    hybrid_images = compose_hybrid_image(gaussian_blur, images, images[idxs])
     second_component = images[idxs]
     negative_paris = np.array(negative_paris)
 

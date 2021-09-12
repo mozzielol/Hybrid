@@ -6,7 +6,7 @@ from eval_model import _load_stl10, eval_trail
 from util.util import get_device
 import timeit
 from loss.order_loss import Order_loss
-from data_aug.hybrid import get_hybrid_images
+from data_aug.hybrid import get_hybrid_images, GaussianSmoothing
 
 
 torch.manual_seed(0)
@@ -22,6 +22,7 @@ class Order_train(object):
         self.dataset = dataset
         self.X_train, self.y_train = _load_stl10("train")
         self.X_test, self.y_test = _load_stl10("test")
+        self.gaussian_blur = GaussianSmoothing(3, 15, 2).to(self.device)
 
     def _step(self, model, xis, xjs, x_anchor):
 
@@ -81,7 +82,7 @@ class Order_train(object):
                 counter += 1
                 optimizer.zero_grad()
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
-                AB, B, C = get_hybrid_images(x_anchor.to(self.device), self.config['hybrid']['kernel_size'])
+                AB, B, C = get_hybrid_images(self.gaussian_blur, x_anchor.to(self.device), self.config['hybrid']['kernel_size'])
                 A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
                 x_anchor = x_anchor.to(self.device)
                 loss = 0
