@@ -25,4 +25,4 @@ dataset:
   augmentation: True
 
 loss:
-  use_cosine_similarity: True
+  use_cosine_similarity: False
