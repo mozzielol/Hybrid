@@ -35,7 +35,7 @@ class Order_loss(torch.nn.Module):
         return v
 
     def _metrics_similarity(self, x, y):
-        return torch.sqrt(torch.square(self.projector(x) - self.projector(y)))
+        return torch.sum(torch.sqrt(torch.square(self.projector(x) - self.projector(y))), dim=1)
 
     def forward(self, zis, zjs, z_anchor, single_pair=False):
         """
