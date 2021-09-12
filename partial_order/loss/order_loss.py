@@ -4,19 +4,20 @@ import numpy as np
 
 class Order_loss(torch.nn.Module):
 
-    def __init__(self, delta, use_cosine_similarity):
+    def __init__(self, dim, delta, use_cosine_similarity):
         super(Order_loss, self).__init__()
         self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
         self.measure_similarity = self._get_similarity_function(use_cosine_similarity)
         self.criterion = torch.nn.MSELoss(reduction='sum')
         self.delta = delta
+        self.projector = torch.nn.Linear(dim, dim, bias=False)
 
     def _get_similarity_function(self, use_cosine_similarity):
         if use_cosine_similarity:
             self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
             return self._cosine_simililarity
         else:
-            return self._distance_similarity
+            return self._metrics_similarity
 
     @staticmethod
     def _dot_simililarity(x, y):
@@ -33,19 +34,8 @@ class Order_loss(torch.nn.Module):
         v = self._cosine_similarity(x.unsqueeze(1), y.unsqueeze(0))
         return v
 
-    def _distance_similarity(self, x, y, targets=None):
-        similarity_matrix = torch.zeros([x.size(0), x.size(0)])
-        for x_idx, x_ele in enumerate(x):
-            for y_idx, y_ele in enumerate(y):
-                if x_idx == y_idx:
-                    similarity_matrix[x_idx, y_idx] = 1.
-                else:
-                    if targets is None:
-                        similarity_matrix[x_idx, y_idx] = torch.exp(-torch.sqrt(torch.mean(torch.square(x - y))))
-                    else:
-                        similarity_matrix[x_idx, y_idx] = torch.exp(-torch.sqrt(torch.mean(torch.square(x - y - targets[x_idx, y_idx]))))
-
-        return similarity_matrix
+    def _metrics_similarity(self, x, y):
+        return torch.sqrt(torch.square(self.projector(x) - self.projector(y)))
 
     def forward(self, zis, zjs, z_anchor, single_pair=False):
         """

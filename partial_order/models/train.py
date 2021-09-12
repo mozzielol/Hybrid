@@ -18,7 +18,7 @@ class Order_train(object):
         self.config = config
         self.device = get_device()
         # self.writer = SummaryWriter(log_dir='runs/' + config['log_dir'])
-        self.loss_func = Order_loss(config['hybrid']['delta'], **config['loss'])
+        self.loss_func = Order_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
         self.dataset = dataset
         self.X_train, self.y_train = _load_stl10("train")
         self.X_test, self.y_test = _load_stl10("test")
@@ -103,10 +103,10 @@ class Order_train(object):
 
                 optimizer.step()
                 n_iter += 1
-
-            train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
-            final_test_acc = test_acc
-            print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
+            if epoch_counter // self.config['eval_every_n_epochs'] == 0:
+                train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
+                final_test_acc = test_acc
+                print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
             if epoch_counter >= 10:
                 scheduler.step()
 
