@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 class Order_loss(torch.nn.Module):
 
@@ -10,7 +12,7 @@ class Order_loss(torch.nn.Module):
         self.measure_similarity = self._get_similarity_function(use_cosine_similarity)
         self.criterion = torch.nn.MSELoss(reduction='sum')
         self.delta = delta
-        self.projector = torch.nn.Linear(dim, dim, bias=False)
+        self.projector = torch.nn.Linear(dim, dim, bias=False).to(device)
 
     def _get_similarity_function(self, use_cosine_similarity):
         if use_cosine_similarity:
