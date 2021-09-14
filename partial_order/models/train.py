@@ -22,7 +22,7 @@ class Order_train(object):
         self.dataset = dataset
         self.X_train, self.y_train = _load_stl10("train")
         self.X_test, self.y_test = _load_stl10("test")
-        self.gaussian_blur = GaussianSmoothing(3, 15, 2).to(self.device)
+        self.gaussian_blur = GaussianSmoothing(3, int(config['hybrid']['kernel_size']), 2).to(self.device)
 
     def _step(self, model, xis, xjs, x_anchor):
 

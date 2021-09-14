@@ -71,12 +71,14 @@ class GaussianSmoothing(nn.Module):
         """
         return self.conv(input, weight=self.weight, groups=self.groups)
 
+
 def compose_hybrid_image(gaussian_blur, src_low, src_high, kernel=(9, 9)):
     """
     Compose a hybrid image based on a pair of inputs specifying the low and high frequency components
+    :param gaussian_blur: instance of the class used for blurring
     :param src_low: source image that contains the low frequency component, shape (H x W x 3)
     :param src_high: source image that contains the high frequency component, shape (H x W x 3)
-    :param kernel: kernel size of Gaussian blur
+    :param kernel: kernel size of Gaussian blur (no longer used)
     :return: hybrid image, shape (H x W x 3)
     """
     image_low_pad = torch.nn.functional.pad(src_low, (4, 4, 4, 4), mode='reflect')
