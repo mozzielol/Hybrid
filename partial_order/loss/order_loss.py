@@ -11,6 +11,7 @@ class Order_loss(torch.nn.Module):
         self.criterion = torch.nn.MSELoss(reduction='sum')
         self.delta = delta
         self.projector = torch.nn.Linear(dim, dim, bias=False)
+        self.use_cosine_similarity = use_cosine_similarity
 
     def _get_similarity_function(self, use_cosine_similarity):
         if use_cosine_similarity:
@@ -35,21 +36,28 @@ class Order_loss(torch.nn.Module):
         return v
 
     def _metrics_similarity(self, x, y):
-        return torch.sum(torch.sqrt(torch.square(self.projector(x) - self.projector(y))), dim=1)
+        return torch.sum(torch.square(self.projector(x) - self.projector(y)), dim=1)
 
     def forward(self, zis, zjs, z_anchor, single_pair=False):
         """
+        :param single_pair:
         :param zis: similar to anchor
         :param zjs: dissimilar to anchor
         :param z_anchor: anchor image
         :return:
         """
-        s1 = torch.diag(self.measure_similarity(zis, z_anchor))
+        s1 = torch.diag(self.measure_similarity(zis, z_anchor)) if self.use_cosine_similarity else self.measure_similarity(zis, z_anchor)
         if single_pair:
-            s2 = torch.diag(self.measure_similarity(zjs, z_anchor))
+            s2 = torch.diag(self.measure_similarity(zjs, z_anchor)) if self.use_cosine_similarity else self.measure_similarity(zjs, z_anchor)
             differences = torch.clamp(s2 - s1 + self.delta, min=0)
         else:
-            s2 = self.measure_similarity(zjs, z_anchor)
+            if self.use_cosine_similarity:
+                s2 = self.measure_similarity(zjs, z_anchor)
+            else:
+                s2 = []
+                for sample in z_anchor:
+                    s2.append(self.measure_similarity(zjs, sample))
+                s2 = torch.stack(s2)
             # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
             differences = torch.clamp(s2 - s1.reshape(-1, 1) + self.delta, min=0)
         loss = self.criterion(differences, torch.zeros_like(differences))
