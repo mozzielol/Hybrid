@@ -20,11 +20,12 @@ class Order_train(object):
         self.config = config
         self.device = get_device()
         self.writer = SummaryWriter(log_dir=config['log_dir'])
-        os.makedirs(os.path.join(config['log_dir'], 'checkpoints'))
         self.loss_func = Order_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
         self.dataset = dataset
         self.X_train, self.y_train = _load_stl10("train")
         self.X_test, self.y_test = _load_stl10("test")
+
+        Path(os.path.join(config['log_dir'], 'checkpoints')).mkdir(parents=True, exist_ok=True)
 
     def _step(self, model, xis, xjs, x_anchor):
 
@@ -47,7 +48,7 @@ class Order_train(object):
     def _step_by_indices(self, model, xis, x_anchor):
         ris, zis = model(xis)  # [N,C]
         r_anchor, z_anchor = model(x_anchor)
-        if self.config['use_cosine_similarity']:
+        if self.config['loss']['use_cosine_similarity']:
             zis = F.normalize(zis, dim=1)
             z_anchor = F.normalize(z_anchor, dim=1)
         loss = self.loss_func(zis, z_anchor, z_anchor)
