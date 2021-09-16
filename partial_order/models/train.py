@@ -118,7 +118,6 @@ class Order_train(object):
 
             # tune.report(loss=best_valid_loss, accuracy=test_acc)
             stop = timeit.default_timer()
-            print('Epoch', epoch_counter, 'Time: ', stop - start)
 
         return final_test_acc
 
