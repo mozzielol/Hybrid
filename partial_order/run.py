@@ -26,7 +26,8 @@ def set_triplet_weights():
 
 def search_config():
     config = {}
-    config['kernel_size'] = [5, 15, 31, 47]
+    config['kernel_size'] = [(5, 5), (15, 15)]
+    config['sigma'] = [(1.5, 1.5)]
     config['delta'] = [0.1]
     config['triple_weights'] = [(0, 0, 0, 0, 1), (0, 0, 1, 0, 1), (0, 0, 1, 1, 1), (1, 0, 0, 0, 1), (1, 0, 1, 0, 1), (1, 0, 1, 1, 1)] # set_triplet_weights()
     config['learning_rate'] = [1e-3]

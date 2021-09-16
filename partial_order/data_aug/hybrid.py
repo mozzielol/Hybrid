@@ -2,6 +2,7 @@ import numpy as np
 import math
 import numbers
 import torch
+import torchgeometry as tgm
 from torch import nn
 from torch.nn import functional as F
 
@@ -72,20 +73,18 @@ class GaussianSmoothing(nn.Module):
         return self.conv(input, weight=self.weight, groups=self.groups)
 
 
-def compose_hybrid_image(gaussian_blur, src_low, src_high, kernel=(9, 9)):
+def compose_hybrid_image(src_low, src_high, kernel=(9, 9), sigma=(1.5, 1.5)):
     """
     Compose a hybrid image based on a pair of inputs specifying the low and high frequency components
-    :param gaussian_blur: instance of the class used for blurring
     :param src_low: source image that contains the low frequency component, shape (H x W x 3)
     :param src_high: source image that contains the high frequency component, shape (H x W x 3)
-    :param kernel: kernel size of Gaussian blur (no longer used)
+    :param kernel: kernel size of Gaussian blur Tuple
+    :param sigma: standard deviation of the kernel
     :return: hybrid image, shape (H x W x 3)
     """
-    image_low_pad = torch.nn.functional.pad(src_low, (4, 4, 4, 4), mode='reflect')
-    image_high_pad = torch.nn.functional.pad(src_high, (4, 4, 4, 4),mode='reflect')
-    image_low = gaussian_blur(image_low_pad)
-    image_high = gaussian_blur(image_high_pad)
-    return image_low + image_high
+    image_low = tgm.image.gaussian_blur(src_low, kernel_size=kernel, sigma=sigma)
+    image_high = src_high - tgm.image.gaussian_blur(src_high, kernel_size=kernel, sigma=sigma)
+    return (image_low + image_high).clamp(0, 1)
 
 
 def images_to_tensors(hybrid_images):
@@ -97,12 +96,11 @@ def images_to_tensors(hybrid_images):
     return hybrid_images
 
 
-def get_hybrid_images(gaussian_blur, image_batch, kernel=(9, 9)):
+def get_hybrid_images(image_batch, kernel=(9, 9), sigma=(1.5, 1.5)):
     """
-    :param image_batch: input images
-    :param kernel: kernel for hybrid images
-    :param return_sec_component: additionally return the second component which is used for constructing hybrid images
-    :param return_other: additionally return another images
+    :param image_batch: batch of input images
+    :param kernel: kernel for Gaussian blurring to generate hybrid images
+    :param sigma: standard deviation of Gaussian kernel
     :return:
     """
     images = image_batch
@@ -117,7 +115,7 @@ def get_hybrid_images(gaussian_blur, image_batch, kernel=(9, 9)):
         negative_paris.append(np.ones(len(image_batch), dtype=bool))
         negative_paris[i][i] = False
         negative_paris[i][image_indices[j]] = False
-    hybrid_images = compose_hybrid_image(gaussian_blur, images, images[idxs])
+    hybrid_images = compose_hybrid_image(images, images[idxs], kernel, sigma)
     second_component = images[idxs]
     negative_paris = np.array(negative_paris)
 
