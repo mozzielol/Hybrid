@@ -43,6 +43,9 @@ def main():
     table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'triple_weights', 'test acc'])
     keys = ['kernel_size', 'delta', 'learning_rate', 'triple_weights']
     for idx, c in enumerate(combinations):
+        config['log_dir'] = 'runs/'
+        for key in c.keys():
+            config['log_dir'] += str(c[key]) + '_'
         row = []
         print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))
         print(c)

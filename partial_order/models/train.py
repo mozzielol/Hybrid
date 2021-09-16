@@ -7,7 +7,9 @@ from util.util import get_device
 import timeit
 from loss.order_loss import Order_loss
 from data_aug.hybrid import get_hybrid_images, GaussianSmoothing
-
+from torch.utils.tensorboard import SummaryWriter
+import os
+from pathlib import Path
 
 torch.manual_seed(0)
 
@@ -17,7 +19,8 @@ class Order_train(object):
     def __init__(self, dataset, config):
         self.config = config
         self.device = get_device()
-        # self.writer = SummaryWriter(log_dir='runs/' + config['log_dir'])
+        self.writer = SummaryWriter(log_dir=config['log_dir'])
+        os.makedirs(os.path.join(config['log_dir'], 'checkpoints'))
         self.loss_func = Order_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
         self.dataset = dataset
         self.X_train, self.y_train = _load_stl10("train")
@@ -57,7 +60,7 @@ class Order_train(object):
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
-        # model = self._load_pre_trained_weights(model)
+        model = self._load_pre_trained_weights(model)
 
         optimizer = torch.optim.Adam(model.parameters(), self.config['hybrid']['learning_rate'],
                                      weight_decay=eval(self.config['weight_decay']))
@@ -82,7 +85,8 @@ class Order_train(object):
                 counter += 1
                 optimizer.zero_grad()
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
-                AB, B, C = get_hybrid_images(self.gaussian_blur, x_anchor.to(self.device), self.config['hybrid']['kernel_size'])
+                AB, B, C = get_hybrid_images(self.gaussian_blur, x_anchor.to(self.device),
+                                             self.config['hybrid']['kernel_size'])
                 A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
                 x_anchor = x_anchor.to(self.device)
                 loss = 0
@@ -97,15 +101,16 @@ class Order_train(object):
                 if w_A1_C > 0:
                     loss += w_A1_C * self._step_by_indices(model, A1, x_anchor)
 
-                # if n_iter % self.config['log_every_n_steps'] == 0:
-                #     self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 loss = loss.to(self.device)
                 loss.backward()
 
                 optimizer.step()
                 n_iter += 1
             if epoch_counter // self.config['eval_every_n_epochs'] == 0:
-                train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test, self.config, self.device)
+                self.writer.add_scalar('train_loss', loss, global_step=n_iter)
+                torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))
+                train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test,
+                                                 self.config, self.device)
                 final_test_acc = test_acc
                 print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
             if epoch_counter >= 10:
@@ -117,7 +122,7 @@ class Order_train(object):
 
         return final_test_acc
 
-            # warmup for the first 10 epochs
+        # warmup for the first 10 epochs
 
     def _validate(self, model, valid_loader):
         # validation steps
@@ -136,3 +141,14 @@ class Order_train(object):
             valid_loss /= counter
         model.train()
         return valid_loss
+
+    def _load_pre_trained_weights(self, model):
+        try:
+            checkpoints_folder = os.path.join(self.config['log_dir'], 'checkpoints')
+            state_dict = torch.load(os.path.join(checkpoints_folder, 'model.pth'))
+            model.load_state_dict(state_dict)
+            print("Loaded pre-trained model with success.")
+        except FileNotFoundError:
+            print("Pre-trained weights not found. Training from scratch.")
+
+        return model
