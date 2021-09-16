@@ -36,11 +36,11 @@ class Order_train(object):
         rjs, zjs = model(xjs)  # [N,C]
 
         r_anchor, z_anchor = model(x_anchor)
-
-        # normalize projection feature vectors
-        zis = F.normalize(zis, dim=1)
-        zjs = F.normalize(zjs, dim=1)
-        z_anchor = F.normalize(z_anchor, dim=1)
+        if self.config['use_cosine_similarity']:
+            # normalize projection feature vectors
+            zis = F.normalize(zis, dim=1)
+            zjs = F.normalize(zjs, dim=1)
+            z_anchor = F.normalize(z_anchor, dim=1)
 
         loss = self.loss_func(zis, zjs, z_anchor, True)
         return loss
@@ -48,8 +48,9 @@ class Order_train(object):
     def _step_by_indices(self, model, xis, x_anchor):
         ris, zis = model(xis)  # [N,C]
         r_anchor, z_anchor = model(x_anchor)
-        zis = F.normalize(zis, dim=1)
-        z_anchor = F.normalize(z_anchor, dim=1)
+        if self.config['use_cosine_similarity']:
+            zis = F.normalize(zis, dim=1)
+            z_anchor = F.normalize(z_anchor, dim=1)
         loss = self.loss_func(zis, z_anchor, z_anchor)
         return loss
 
