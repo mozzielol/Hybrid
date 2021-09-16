@@ -13,7 +13,7 @@ import importlib.util
 
 def next_batch(X, y, batch_size, device):
     for i in range(0, X.shape[0], batch_size):
-        X_batch = torch.tensor(X[i: i+batch_size]) / 255.
+        X_batch = torch.tensor(X[i: i+batch_size])
         y_batch = torch.tensor(y[i: i+batch_size])
         yield X_batch.to(device), y_batch.to(device)
         

@@ -9,7 +9,7 @@ from loss.order_loss import Order_loss
 from data_aug.hybrid import get_hybrid_images, GaussianSmoothing
 from torch.utils.tensorboard import SummaryWriter
 import os
-from pathlib import Path
+from data_aug.seq_loader import Sequence
 
 torch.manual_seed(0)
 
@@ -20,12 +20,12 @@ class Order_train(object):
         self.config = config
         self.device = get_device()
         self.writer = SummaryWriter(log_dir=config['log_dir'])
-        os.makedirs(os.path.join(config['log_dir'], 'checkpoints'))
+        try:
+            os.makedirs(os.path.join(config['log_dir'], 'checkpoints'))
+        except FileExistsError:
+            pass
         self.loss_func = Order_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
         self.dataset = dataset
-        self.X_train, self.y_train = _load_stl10("train")
-        self.X_test, self.y_test = _load_stl10("test")
-        self.gaussian_blur = GaussianSmoothing(3, int(config['hybrid']['kernel_size']), 2).to(self.device)
 
     def _step(self, model, xis, xjs, x_anchor):
 
@@ -38,9 +38,9 @@ class Order_train(object):
         r_anchor, z_anchor = model(x_anchor)
 
         # normalize projection feature vectors
-        zis = F.normalize(zis, dim=1)
-        zjs = F.normalize(zjs, dim=1)
-        z_anchor = F.normalize(z_anchor, dim=1)
+        zis = F.normalize(zis.unsqueeze(0), dim=1)
+        zjs = F.normalize(zjs.unsqueeze(0), dim=1)
+        z_anchor = F.normalize(z_anchor.unsqueeze(0), dim=1)
 
         loss = self.loss_func(zis, zjs, z_anchor, True)
         return loss
@@ -57,7 +57,8 @@ class Order_train(object):
         if config is not None:
             self.config = config
 
-        train_loader, valid_loader = self.dataset.get_data_loaders()
+        train_loader = Sequence(10)
+        self.X_train, self.y_train, self.X_test, self.y_test = train_loader.train_test_split(5, 2000)
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
         model = self._load_pre_trained_weights(model)
@@ -79,31 +80,21 @@ class Order_train(object):
             counter = 0
             if epoch_counter == 1 and self.config['testing_phase']:
                 break
-            for (A1, x_anchor), _ in train_loader:
+            for (pre_anchor, anchor, post_anchor), _ in train_loader:
                 if counter == 1 and self.config['testing_phase']:
                     break
                 counter += 1
                 optimizer.zero_grad()
-                w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
-                AB, B, C = get_hybrid_images(self.gaussian_blur, x_anchor.to(self.device),
-                                             self.config['hybrid']['kernel_size'])
-                A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
-                x_anchor = x_anchor.to(self.device)
+                pre_anchor, anchor, post_anchor = pre_anchor.to(self.device), anchor.to(self.device), post_anchor.to(self.device)
                 loss = 0
-                if w_A1_B > 0:
-                    loss += w_A1_B * self._step(model, A1, B, x_anchor)
-                if w_AB_C > 0:
-                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor)
-                if w_A1_AB > 0:
-                    loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
-                if w_AB_B > 0:
-                    loss += w_AB_B * self._step(model, AB, B, x_anchor)
-                if w_A1_C > 0:
-                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor)
+                for idx in range(len(pre_anchor) - 1, 0, -1):
+                    loss += self._step(model, pre_anchor[idx].unsqueeze(0), pre_anchor[idx - 1].unsqueeze(0), anchor)
+                for idx in range(len(post_anchor) - 1):
+                    loss += self._step(model, post_anchor[idx].unsqueeze(0), post_anchor[idx + 1].unsqueeze(0), anchor)
 
                 loss = loss.to(self.device)
                 loss.backward()
-
+                print(loss.item())
                 optimizer.step()
                 n_iter += 1
             if epoch_counter // self.config['eval_every_n_epochs'] == 0:
@@ -118,6 +109,7 @@ class Order_train(object):
 
             # tune.report(loss=best_valid_loss, accuracy=test_acc)
             stop = timeit.default_timer()
+            print('Epoch', epoch_counter, 'Time: ', stop - start)
 
         return final_test_acc
 
