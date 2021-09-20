@@ -36,7 +36,7 @@ class Order_train(object):
         rjs, zjs = model(xjs)  # [N,C]
 
         r_anchor, z_anchor = model(x_anchor)
-        if self.config['use_cosine_similarity']:
+        if self.config['loss']['use_cosine_similarity']:
             # normalize projection feature vectors
             zis = F.normalize(zis, dim=1)
             zjs = F.normalize(zjs, dim=1)
