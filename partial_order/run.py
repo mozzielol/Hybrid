@@ -31,6 +31,7 @@ def search_config():
     config['delta'] = [0.1]
     config['triple_weights'] = [(0, 0, 0, 0, 1), (0, 0, 1, 0, 1), (0, 0, 1, 1, 1), (1, 0, 0, 0, 1), (1, 0, 1, 0, 1), (1, 0, 1, 1, 1)] # set_triplet_weights()
     config['learning_rate'] = [1e-3]
+    config['use_cosine_similarity'] = [True, False]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
     return combinations
