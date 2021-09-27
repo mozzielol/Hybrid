@@ -17,19 +17,12 @@ The weights of triples follow the order:
 """
 
 
-def set_triplet_weights():
-    triplet_weights = (np.linspace(0, 1, 2), ) * 5
-    weights = [list(items) for items in it.product(*triplet_weights)]
-    weights.remove([0, 0, 0, 0, 0])
-    return weights
-
-
 def search_config():
     config = {}
-    config['kernel_size'] = [5, 15, 31, 47]
     config['delta'] = [0.1]
-    config['triple_weights'] = [(0, 0, 0, 0, 1), (0, 0, 1, 0, 1), (0, 0, 1, 1, 1), (1, 0, 0, 0, 1), (1, 0, 1, 0, 1), (1, 0, 1, 1, 1)] # set_triplet_weights()
     config['learning_rate'] = [1e-3]
+    config['duration'] = [10]
+    config['interval'] = [2]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
     return combinations
@@ -40,16 +33,16 @@ def main():
     dataset = DataSetWrapper(config['batch_size'], **config['dataset'])
 
     combinations = search_config()
-    table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'triple_weights', 'test acc'])
-    keys = ['kernel_size', 'delta', 'learning_rate', 'triple_weights']
+    table = PrettyTable(['delta', 'learning_rate', 'test acc'])
+    keys = [ 'delta', 'learning_rate']
     for idx, c in enumerate(combinations):
         config['log_dir'] = 'runs/'
         for key in c.keys():
             config['log_dir'] += str(c[key]) + '_'
         row = []
-        print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))
+        print('Trail %d/%d start ...' % (idx + 1, len(combinations)))
         print(c)
-        config['hybrid'] = c
+        config['sequence'] = c
         for k in keys:
             row.append(c[k])
         simclr = Order_train(dataset, config)

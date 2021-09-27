@@ -65,8 +65,9 @@ def read_seq(path):
 
 
 class Sequence:
-    def __init__(self, duration, directory='./data/sports'):
+    def __init__(self, duration, interval, directory='./data/sports'):
         self.duration = duration
+        self.interval = interval
         self.transform = Transform()
         self.data = self._load_data(directory)
         self.counter = 0
@@ -97,11 +98,12 @@ class Sequence:
         cls_id = np.random.randint(len(self.data.keys()))
         sample_id = np.random.randint(len(self.data[cls_id]))
         data = self.data[cls_id][sample_id]
-        frame_id = np.random.randint(self.duration, len(data) - self.duration)
+        frame_id = np.random.randint(self.duration * self.interval,
+                                     len(data) - self.duration * self.interval)
         self.counter += 1
-        return (data[frame_id - self.duration: frame_id],
+        return (data[frame_id - self.duration * self.interval: frame_id: self.interval],
                 data[frame_id].unsqueeze(0),
-                data[frame_id: frame_id + self.duration]), torch.Tensor(cls_id).unsqueeze(0)
+                data[frame_id: frame_id + self.duration * self.interval: self.interval]), torch.Tensor(cls_id).unsqueeze(0)
 
     def __len__(self):
         return len(self.data)
@@ -112,7 +114,7 @@ class Sequence:
             sample_counter = 0
             if os.path.isdir(os.path.join(directory, dir)):
                 for filename in os.listdir(os.path.join(directory, dir)):
-                    if filename.endswith(".seq") and sample_counter < 10:
+                    if filename.endswith(".seq") and sample_counter < 20:
                         sample_counter += 1
                         yield read_seq(os.path.join(directory, dir, filename)), dir
                     else:

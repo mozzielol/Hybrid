@@ -24,7 +24,7 @@ class Order_train(object):
             os.makedirs(os.path.join(config['log_dir'], 'checkpoints'))
         except FileExistsError:
             pass
-        self.loss_func = Order_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
+        self.loss_func = Order_loss(config['model']['out_dim'], config['sequence']['delta'], **config['loss'])
         self.dataset = dataset
 
     def _step(self, model, xis, xjs, x_anchor):
@@ -57,13 +57,13 @@ class Order_train(object):
         if config is not None:
             self.config = config
 
-        train_loader = Sequence(10)
+        train_loader = Sequence(self.config['sequence']['duration'], self.config['sequence']['interval'])
         self.X_train, self.y_train, self.X_test, self.y_test = train_loader.train_test_split(5, 2000)
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
         model = self._load_pre_trained_weights(model)
 
-        optimizer = torch.optim.Adam(model.parameters(), self.config['hybrid']['learning_rate'],
+        optimizer = torch.optim.Adam(model.parameters(), self.config['sequence']['learning_rate'],
                                      weight_decay=eval(self.config['weight_decay']))
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,

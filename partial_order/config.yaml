@@ -6,11 +6,10 @@ log_every_n_steps: 50
 weight_decay: 10e-6
 testing_phase: False
 
-hybrid:
-  kernel_size: 15
+sequence:
+  duration: 10
+  interval: 3
   delta: 0.01
-  triple_weights: [1, 1, 1, 1]
-  learning_rate: 0.0003
 
 model:
   out_dim: 128
