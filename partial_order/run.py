@@ -31,7 +31,7 @@ def search_config():
     config['delta'] = [0.1]
     config['triple_weights'] = [(0, 0, 0, 0, 1), (0, 0, 1, 0, 1), (0, 0, 1, 1, 1), (1, 0, 0, 0, 1), (1, 0, 1, 0, 1), (1, 0, 1, 1, 1)] # set_triplet_weights()
     config['learning_rate'] = [1e-3]
-    config['use_cosine_similarity'] = [True, False]
+    # config['use_cosine_similarity'] = [False, True]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
     return combinations
@@ -45,7 +45,7 @@ def main():
     table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'triple_weights', 'test acc'])
     keys = ['kernel_size', 'delta', 'learning_rate', 'triple_weights']
     for idx, c in enumerate(combinations):
-        config['log_dir'] = 'runs/'
+        config['log_dir'] = './runs/'
         for key in c.keys():
             config['log_dir'] += str(c[key]) + '_'
         row = []

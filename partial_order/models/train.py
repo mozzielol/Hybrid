@@ -1,4 +1,5 @@
 import torch
+from torch.utils.tensorboard import SummaryWriter
 from models.resnet_simclr import ResNetSimCLR
 import torch.nn.functional as F
 import numpy as np
@@ -7,7 +8,6 @@ from util.util import get_device
 import timeit
 from loss.order_loss import Order_loss
 from data_aug.hybrid import get_hybrid_images
-from torch.utils.tensorboard import SummaryWriter
 import os
 from pathlib import Path
 
@@ -19,13 +19,12 @@ class Order_train(object):
     def __init__(self, dataset, config):
         self.config = config
         self.device = get_device()
+        Path(os.path.join(config['log_dir'], 'checkpoints')).mkdir(parents=True, exist_ok=True)
         self.writer = SummaryWriter(log_dir=config['log_dir'])
         self.loss_func = Order_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
         self.dataset = dataset
         self.X_train, self.y_train = _load_stl10("train")
         self.X_test, self.y_test = _load_stl10("test")
-
-        Path(os.path.join(config['log_dir'], 'checkpoints')).mkdir(parents=True, exist_ok=True)
 
     def _step(self, model, xis, xjs, x_anchor):
 
