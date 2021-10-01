@@ -32,8 +32,8 @@ class Order_loss(torch.nn.Module):
 
     def _cosine_simililarity(self, x, y):
         # x shape: (N, 1, C)
-        # y shape: (1, 2N, C)
-        # v shape: (N, 2N)
+        # y shape: (1, N, C)
+        # v shape: (N, N), the element of v_ij is the similarity between ith image in x and jth image in y
         v = self._cosine_similarity(x.unsqueeze(1), y.unsqueeze(0))
         return v
 
