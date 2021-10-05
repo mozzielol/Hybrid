@@ -102,7 +102,6 @@ class Order_train(object):
 
                 loss = loss.to(self.device)
                 loss.backward()
-
                 optimizer.step()
                 n_iter += 1
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:

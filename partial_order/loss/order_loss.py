@@ -10,7 +10,7 @@ class Order_loss(torch.nn.Module):
         super(Order_loss, self).__init__()
         self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
         self.measure_similarity = self._get_similarity_function(use_cosine_similarity)
-        self.criterion = torch.nn.MSELoss(reduction='sum')
+        self.criterion = torch.nn.BCELoss(reduction='sum')
         self.delta = delta
         self.use_cosine_similarity = use_cosine_similarity
         self.projector = torch.nn.Linear(dim, dim, bias=False).to(device)
