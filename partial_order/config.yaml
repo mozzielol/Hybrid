@@ -27,3 +27,4 @@ dataset:
 
 loss:
   use_cosine_similarity: False
+  loss_function: bce
