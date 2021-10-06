@@ -14,7 +14,7 @@ class Order_loss(torch.nn.Module):
         self.delta = delta
         self.use_cosine_similarity = use_cosine_similarity
         self.projector = torch.nn.Linear(dim, dim, bias=False).to(device)
-        self.mahalanobis_cov = torch.nn.Parameter(torch.tensor(torch.rand((dim, dim)), requires_grad=True))
+        self.mahalanobis_cov = torch.nn.Parameter(torch.rand((dim, dim)), requires_grad=True)
 
     def _get_similarity_function(self, use_cosine_similarity):
         if use_cosine_similarity:
@@ -40,15 +40,17 @@ class Order_loss(torch.nn.Module):
 
     def _metrics_similarity(self, x, y):
         # return torch.sum(torch.square(self.projector(x) - self.projector(y)), dim=1)
-        return self._mahalanobis_distance(self.projector(x), self.projector(y))
+        return self._mahalanobis_distance(x, y)
 
     def _mahalanobis_distance(self, u, v):
         cov = torch.mm(self.mahalanobis_cov, self.mahalanobis_cov.t())\
             .add_(torch.eye(len(self.mahalanobis_cov))).to(device)
         cov_inv = torch.inverse(cov)
         delta = u - v
-        dist = torch.sqrt(torch.einsum('ij, ij -> i', torch.matmul(delta, cov_inv), delta))
-        return torch.sum(dist)
+        dist = torch.einsum('ij, ij -> i', torch.matmul(delta, cov_inv), delta)
+        dist = torch.sum(dist)
+        return dist
+
 
     def forward(self, zis, zjs, z_anchor, single_pair=False):
         """
@@ -72,5 +74,8 @@ class Order_loss(torch.nn.Module):
                 s2 = torch.stack(s2)
             # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
             differences = torch.clamp(s2 - s1.reshape(-1, 1) + self.delta, min=0)
+            differences = differences - differences.min()
+            differences = differences / differences.max()
+
         loss = self.criterion(differences, torch.zeros_like(differences))
         return loss
