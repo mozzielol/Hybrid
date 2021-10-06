@@ -47,7 +47,7 @@ class Order_loss(torch.nn.Module):
             .add_(torch.eye(len(self.mahalanobis_cov))).to(device)
         cov_inv = torch.inverse(cov)
         delta = u - v
-        dist = torch.einsum('ij, ij -> i', torch.matmul(delta, cov_inv), delta)
+        dist = torch.sqrt(torch.einsum('ij, ij -> i', torch.matmul(delta, cov_inv), delta))
         dist = torch.sum(dist)
         return dist
 
@@ -68,14 +68,15 @@ class Order_loss(torch.nn.Module):
             if self.use_cosine_similarity:
                 s2 = self.measure_similarity(zjs, z_anchor)
             else:
-                s2 = []
-                for sample in z_anchor:
-                    s2.append(self.measure_similarity(zjs, sample))
-                s2 = torch.stack(s2)
+                #s2 = []
+                #for sample in z_anchor:
+                #    s2.append(self.measure_similarity(zjs, sample))
+                #s2 = torch.stack(s2)
+                pass
             # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
-            differences = torch.clamp(s2 - s1.reshape(-1, 1) + self.delta, min=0)
-            differences = differences - differences.min()
-            differences = differences / differences.max()
+            differences = s1 #torch.clamp(s2 - s1.reshape(-1, 1) + self.delta, min=0)
+      #      differences = differences - differences.min()
+      #      differences = differences / differences.max()
 
         loss = self.criterion(differences, torch.zeros_like(differences))
         return loss
