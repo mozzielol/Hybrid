@@ -105,7 +105,6 @@ class Order_train(object):
                 loss.backward()
                 optimizer.step()
                 n_iter += 1
-                print(loss.item())
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))
