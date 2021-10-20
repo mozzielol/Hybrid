@@ -48,9 +48,8 @@ class Order_loss(torch.nn.Module):
         cov_inv = torch.inverse(cov)
         delta = u - v
         dist = torch.sqrt(torch.einsum('ij, ij -> i', torch.matmul(delta, cov_inv), delta))
-        dist = torch.sum(dist)
+        # dist = torch.sum(dist)
         return dist
-
 
     def forward(self, zis, zjs, z_anchor, single_pair=False):
         """
@@ -60,23 +59,19 @@ class Order_loss(torch.nn.Module):
         :param z_anchor: anchor image
         :return:
         """
-        s1 = torch.diag(self.measure_similarity(zis, z_anchor)) if self.use_cosine_similarity else self.measure_similarity(zis, z_anchor)
         if single_pair:
+            s1 = torch.diag(self.measure_similarity(zis, z_anchor)) if self.use_cosine_similarity else self.measure_similarity(zis, z_anchor)
             s2 = torch.diag(self.measure_similarity(zjs, z_anchor)) if self.use_cosine_similarity else self.measure_similarity(zjs, z_anchor)
             differences = torch.clamp(s2 - s1 + self.delta, min=0)
         else:
-            if self.use_cosine_similarity:
-                s2 = self.measure_similarity(zjs, z_anchor)
-            else:
-                #s2 = []
-                #for sample in z_anchor:
-                #    s2.append(self.measure_similarity(zjs, sample))
-                #s2 = torch.stack(s2)
-                pass
+            s1 = self.measure_similarity(zis, z_anchor)
+            s2 = []
+            for count in range(1, len(z_anchor) - 2):
+                s2.append(self.measure_similarity(zis, torch.roll(z_anchor, count, 0)))
+            s2 = torch.stack(s2)
             # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
-            differences = s1 #torch.clamp(s2 - s1.reshape(-1, 1) + self.delta, min=0)
-      #      differences = differences - differences.min()
-      #      differences = differences / differences.max()
-
+            differences = torch.clamp(s2 - s1 + self.delta, min=0)
+        #      differences = differences - differences.min()
+        #      differences = differences / differences.max()
         loss = self.criterion(differences, torch.zeros_like(differences))
         return loss
