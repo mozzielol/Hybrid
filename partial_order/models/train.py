@@ -60,7 +60,8 @@ class Order_train(object):
         train_loader, valid_loader = self.dataset.get_data_loaders()
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
-        model = self._load_pre_trained_weights(model)
+        if self.config["resume_saved_runs"]:
+            model = self._load_pre_trained_weights(model)
 
         optimizer = torch.optim.Adam(model.parameters(), self.config['hybrid']['learning_rate'],
                                      weight_decay=eval(self.config['weight_decay']))
@@ -104,7 +105,6 @@ class Order_train(object):
                 loss.backward()
                 optimizer.step()
                 n_iter += 1
-                print(loss.item())
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))

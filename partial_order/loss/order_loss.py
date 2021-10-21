@@ -43,12 +43,17 @@ class Order_loss(torch.nn.Module):
         return self._mahalanobis_distance(x, y)
 
     def _mahalanobis_distance(self, u, v):
+        """
+        Compute the mahalanobis distance between each element-pairs in u and v.
+        :param u: a batch of vectors in matrix format, shape Num x Dim
+        :param v: a batch of vectors in matrix format, shape Num x Dim
+        :return: a vector of mahalanobis distances: dist[i] = dist(u[i], v[i])
+        """
         cov = torch.mm(self.mahalanobis_cov, self.mahalanobis_cov.t())\
             .add_(torch.eye(len(self.mahalanobis_cov))).to(device)
         cov_inv = torch.inverse(cov)
         delta = u - v
         dist = torch.sqrt(torch.einsum('ij, ij -> i', torch.matmul(delta, cov_inv), delta))
-        # dist = torch.sum(dist)
         return dist
 
     def forward(self, zis, zjs, z_anchor, single_pair=False):
