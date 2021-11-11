@@ -208,7 +208,17 @@ def rand_bbox(size, lam):
     return bbx1, bby1, bbx2, bby2
 
 
-def compose_cutmix_image(src_a, src_b, beta=0):
+def roll_batch(image_batch):
+    idxs = []
+    for i in np.arange(len(image_batch)):
+        image_indices = np.arange(len(image_batch))
+        image_indices = np.delete(image_indices, i)
+        j = np.random.choice(len(image_indices))
+        idxs.append(j)
+    return image_batch[idxs]
+
+
+def compose_cutmix_image(src_a, beta=0):
     """
     Generate a batch of mixed sample using CutMix augmentation
     :param src_a: a batch of source images, shape N x D x H x W
@@ -216,6 +226,7 @@ def compose_cutmix_image(src_a, src_b, beta=0):
     :param beta: beta distribution coefficient that controls the ratio (\lambda) of the bounding box
     :return: a batch of CutMixed images: Cut src_b to mix src_a
     """
+    src_b = roll_batch(src_a)
     assert src_a.shape == src_b.shape, 'Images for CutMix should have exact same shape.'
     if beta > 0:
         result = deepcopy(src_a)
@@ -223,12 +234,12 @@ def compose_cutmix_image(src_a, src_b, beta=0):
         rand_index = torch.randperm(src_a.size()[0]).cuda()
         bbx1, bby1, bbx2, bby2 = rand_bbox(src_a.size(), lam)
         result[:, :, bbx1:bbx2, bby1:bby2] = src_b[rand_index, :, bbx1:bbx2, bby1:bby2]
-        return result
+        return result, src_b
     else:
-        return src_a
+        return src_a, src_b
 
 
-def compose_mixup_image(src_a, src_b, ratio_offset=0):
+def compose_mixup_image(src_a, ratio_offset=0):
     """
     Generate a batch of mixed sample using Mixup augmentation
     :param src_a: a batch of source images, shape N x D x H x W
@@ -236,9 +247,10 @@ def compose_mixup_image(src_a, src_b, ratio_offset=0):
     :param ratio_offset: offset that controls the ratio of mixing two components, range [0, 0.5]
     :return:  a batch of Mixed-up images
     """
+    src_b = roll_batch(src_a)
     assert src_a.shape == src_b.shape, 'Images for Mixup should have exact same shape.'
     ratio_offset = max(min(ratio_offset, 0.5), 0)
     alphas = 0.5 + ratio_offset - 2 * ratio_offset * torch.rand(len(src_a))
     results = [alpha * image1 + (1 - alpha) * image2 for alpha, image1, image2 in zip(alphas, src_a, src_b)]
-    return torch.clamp(torch.stack(results), 0, 1)
+    return torch.clamp(torch.stack(results), 0, 1), src_b
 

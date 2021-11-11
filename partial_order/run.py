@@ -30,6 +30,7 @@ def search_hybrid_config():
     config['kernel_size'] = [(5, 5), (15, 15)]
     config['sigma'] = [(1.5, 1.5)]
     config['delta'] = [0.1]
+    config['probability'] = [(1.0, 0.5), (0.5, 1.0)]
     config['triple_weights'] = [(0, 0, 0, 0, 1), (0, 0, 1, 0, 1), (0, 0, 1, 1, 1), (1, 0, 0, 0, 1), (1, 0, 1, 0, 1),
                                 (1, 0, 1, 1, 1)]
     config['learning_rate'] = [1e-3]
@@ -44,7 +45,7 @@ def search_mix_config():
     config['kernel_size'] = [(5, 5), (15, 15)]
     config['sigma'] = [(1.5, 1.5)]
     config['delta'] = [0.1]
-    config['probability'] = [(0.5, 0.5), (0.5, 1.0)]
+    config['probability'] = [(1.0, 0.5), (0.5, 1.0)]
     config['learning_rate'] = [1e-3]
     # config['use_cosine_similarity'] = [False, True]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
@@ -77,8 +78,8 @@ def main(experiment='sequence'):
         keys = ['kernel_size', 'delta', 'learning_rate', 'probability']
     elif experiment == 'hybrid':
         combinations = search_hybrid_config()
-        table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'triple_weights', 'test acc'])
-        keys = ['kernel_size', 'delta', 'learning_rate', 'triple_weights']
+        table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'mix probability', 'triple_weights', 'test acc'])
+        keys = ['kernel_size', 'delta', 'learning_rate', 'probability', 'triple_weights']
     for idx, c in enumerate(combinations):
         config['log_dir'] = './runs/'
         for key in c.keys():
@@ -102,4 +103,4 @@ def main(experiment='sequence'):
 
 
 if __name__ == "__main__":
-    main()
+    main('mix')

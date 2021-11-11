@@ -27,7 +27,7 @@ class Order_train(object):
         self.X_test, self.y_test = _load_stl10("test")
 
     def _step(self, model, xis, xjs, x_anchor):
-
+        xis, xjs = xis.to(self.device), xjs.to(self.device)
         # get the representations and the projections
         ris, zis = model(xis)  # [N,C]
 
@@ -85,12 +85,23 @@ class Order_train(object):
                     break
                 counter += 1
                 optimizer.zero_grad()
+
+                w_cutmix, w_mix_up = self.config['hybrid']['probability']
+
+                loss = 0
+                if np.random.rand() < w_cutmix:
+                    cutmix_image, src_b = compose_cutmix_image(x_anchor)
+                    loss += self._step(model, cutmix_image, src_b, x_anchor)
+                if np.random.rand() < w_mix_up:
+                    mix_up_image, src_b = compose_cutmix_image(x_anchor)
+                    loss += self._step(model, mix_up_image, src_b, x_anchor)
+
+
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
                 AB, B, C = get_hybrid_images(x_anchor.to(self.device), self.config['hybrid']['kernel_size'],
                                              self.config['hybrid']['sigma'])
                 A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
                 x_anchor = x_anchor.to(self.device)
-                loss = 0
                 if w_A1_B > 0:
                     loss += w_A1_B * self._step(model, A1, B, x_anchor)
                 if w_AB_C > 0:
@@ -195,12 +206,12 @@ class Mix_train(Order_train):
                 w_cutmix, w_mix_up = self.config['hybrid']['probability']
 
                 loss = 0
-                if np.random.rand < w_cutmix:
-                    cutmix_image = compose_cutmix_image(x_anchor, x_anchor).to(self.device)
-                    loss += self._step_by_indices(model, cutmix_image, x_anchor)
-                if np.random.rand < w_mix_up:
-                    mix_up_image = compose_cutmix_image(x_anchor, x_anchor).to(self.device)
-                    loss += self._step_by_indices(model, mix_up_image, x_anchor)
+                if np.random.rand() < w_cutmix:
+                    cutmix_image, src_b = compose_cutmix_image(x_anchor)
+                    loss += self._step(model, cutmix_image, src_b, x_anchor)
+                if np.random.rand() < w_mix_up:
+                    mix_up_image, src_b = compose_cutmix_image(x_anchor)
+                    loss += self._step(model, mix_up_image, src_b, x_anchor)
 
                 loss = loss.to(self.device)
                 loss.backward()
@@ -210,10 +221,10 @@ class Mix_train(Order_train):
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))
-                # train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test,
-                #                                  self.config, self.device)
-                # final_test_acc = test_acc
-                # print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
+                train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test,
+                                                 self.config, self.device)
+                final_test_acc = test_acc
+                print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
             if epoch_counter >= 10:
                 scheduler.step()
 
