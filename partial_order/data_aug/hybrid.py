@@ -5,6 +5,7 @@ import torch
 import torchgeometry as tgm
 from torch import nn
 from torch.nn import functional as F
+from copy import deepcopy
 
 
 class GaussianSmoothing(nn.Module):
@@ -76,11 +77,11 @@ class GaussianSmoothing(nn.Module):
 def compose_hybrid_image(src_low, src_high, kernel=(9, 9), sigma=(1.5, 1.5)):
     """
     Compose a hybrid image based on a pair of inputs specifying the low and high frequency components
-    :param src_low: source image that contains the low frequency component, shape (H x W x 3)
-    :param src_high: source image that contains the high frequency component, shape (H x W x 3)
+    :param src_low: source image that contains the low frequency component, shape (N x H x W x 3)
+    :param src_high: source image that contains the high frequency component, shape (N x H x W x 3)
     :param kernel: kernel size of Gaussian blur Tuple
     :param sigma: standard deviation of the kernel
-    :return: hybrid image, shape (H x W x 3)
+    :return: hybrid image, shape (N x H x W x 3)
     """
     image_low = tgm.image.gaussian_blur(src_low, kernel_size=kernel, sigma=sigma)
     image_high = src_high - tgm.image.gaussian_blur(src_high, kernel_size=kernel, sigma=sigma)
@@ -179,3 +180,65 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(15, 15), weights=(0.5
             similarity_matrix[j, i] = measure_similarity(composition_indices[i], composition_indices[j])
 
     return torch.Tensor(generated_images), torch.Tensor(similarity_matrix)
+
+
+def rand_bbox(size, lam):
+    """
+    Generate random bounding box for patch replacement
+    Reference: https://github.com/clovaai/CutMix-PyTorch/blob/master/train.py#L279
+    :param size:
+    :param lam:
+    :return:
+    """
+    W = size[2]
+    H = size[3]
+    cut_rat = np.sqrt(1. - lam)
+    cut_w = np.int(W * cut_rat)
+    cut_h = np.int(H * cut_rat)
+
+    # uniform
+    cx = np.random.randint(W)
+    cy = np.random.randint(H)
+
+    bbx1 = np.clip(cx - cut_w // 2, 0, W)
+    bby1 = np.clip(cy - cut_h // 2, 0, H)
+    bbx2 = np.clip(cx + cut_w // 2, 0, W)
+    bby2 = np.clip(cy + cut_h // 2, 0, H)
+
+    return bbx1, bby1, bbx2, bby2
+
+
+def compose_cutmix_image(src_a, src_b, beta=0):
+    """
+    Generate a batch of mixed sample using CutMix augmentation
+    :param src_a: a batch of source images, shape N x D x H x W
+    :param src_b: another batch of source images, shape N x D x H x W
+    :param beta: beta distribution coefficient that controls the ratio (\lambda) of the bounding box
+    :return: a batch of CutMixed images: Cut src_b to mix src_a
+    """
+    assert src_a.shape == src_b.shape, 'Images for CutMix should have exact same shape.'
+    if beta > 0:
+        result = deepcopy(src_a)
+        lam = np.random.beta(beta, beta)
+        rand_index = torch.randperm(src_a.size()[0]).cuda()
+        bbx1, bby1, bbx2, bby2 = rand_bbox(src_a.size(), lam)
+        result[:, :, bbx1:bbx2, bby1:bby2] = src_b[rand_index, :, bbx1:bbx2, bby1:bby2]
+        return result
+    else:
+        return src_a
+
+
+def compose_mixup_image(src_a, src_b, ratio_offset=0):
+    """
+    Generate a batch of mixed sample using Mixup augmentation
+    :param src_a: a batch of source images, shape N x D x H x W
+    :param src_b: another batch of source images, shape N x D x H x W
+    :param ratio_offset: offset that controls the ratio of mixing two components, range [0, 0.5]
+    :return:  a batch of Mixed-up images
+    """
+    assert src_a.shape == src_b.shape, 'Images for Mixup should have exact same shape.'
+    ratio_offset = max(min(ratio_offset, 0.5), 0)
+    alphas = 0.5 + ratio_offset - 2 * ratio_offset * torch.rand(len(src_a))
+    results = [alpha * image1 + (1 - alpha) * image2 for alpha, image1, image2 in zip(alphas, src_a, src_b)]
+    return torch.clamp(torch.stack(results), 0, 1)
+
