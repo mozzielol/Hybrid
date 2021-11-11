@@ -56,7 +56,7 @@ def search_sequence_config():
     config = {}
     config['delta'] = [0.1]
     config['learning_rate'] = [1e-3]
-    config['duration'] = [6]
+    config['duration'] = [20]
     config['interval'] = [2]
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
