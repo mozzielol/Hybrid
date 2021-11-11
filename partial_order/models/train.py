@@ -192,7 +192,7 @@ class Mix_train(Order_train):
                     break
                 counter += 1
                 optimizer.zero_grad()
-                w_cutmix, w_mix_up = self.config['mix']['probability']
+                w_cutmix, w_mix_up = self.config['hybrid']['probability']
 
                 loss = 0
                 if np.random.rand < w_cutmix:
@@ -235,13 +235,13 @@ class Sequence_train(Order_train):
         if config is not None:
             self.config = config
 
-        train_loader = self.dataset(self.config['sequence']['duration'], self.config['sequence']['interval'])
-        self.X_train, self.y_train, self.X_test, self.y_test = train_loader.train_test_split(5, 2000)
+        train_loader = self.dataset
+        # self.X_train, self.y_train, self.X_test, self.y_test = train_loader.train_test_split(5, 2000)
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
         model = self._load_pre_trained_weights(model)
 
-        optimizer = torch.optim.Adam(model.parameters(), self.config['sequence']['learning_rate'],
+        optimizer = torch.optim.Adam(model.parameters(), self.config['hybrid']['learning_rate'],
                                      weight_decay=eval(self.config['weight_decay']))
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
@@ -279,10 +279,10 @@ class Sequence_train(Order_train):
             if epoch_counter // self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))
-                train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test,
-                                                 self.config, self.device)
-                final_test_acc = test_acc
-                print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
+                # train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test,
+                #                                  self.config, self.device)
+                # final_test_acc = test_acc
+                # print('Train acc: %.3f, Test acc: %.3f' % (train_acc, test_acc))
             if epoch_counter >= 10:
                 scheduler.step()
 
