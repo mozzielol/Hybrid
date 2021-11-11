@@ -71,7 +71,7 @@ class Order_loss(torch.nn.Module):
         else:
             s1 = self.measure_similarity(zis, z_anchor)
             s2 = []
-            for count in range(1, len(z_anchor) - 2):
+            for count in range(1, len(z_anchor) - 1):
                 s2.append(self.measure_similarity(zis, torch.roll(z_anchor, count, 0)))
             s2 = torch.stack(s2)
             # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
