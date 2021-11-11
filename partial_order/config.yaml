@@ -26,5 +26,5 @@ dataset:
   augmentation: True
 
 loss:
-  use_cosine_similarity: False
+  use_cosine_similarity: True
   loss_function: mse

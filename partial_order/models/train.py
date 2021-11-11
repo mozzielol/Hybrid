@@ -6,7 +6,7 @@ import numpy as np
 from eval_model import _load_stl10, eval_trail
 from util.util import get_device
 import timeit
-from loss.order_loss import Order_loss
+from loss.order_loss import Order_loss, Sequence_loss
 from data_aug.hybrid import *
 import os
 from pathlib import Path
@@ -228,8 +228,9 @@ class Sequence_train(Order_train):
 
     def __init__(self, dataset, config):
         super().__init__(dataset, config)
-        self.X_train, self.y_train = _load_stl10("train")
-        self.X_test, self.y_test = _load_stl10("test")
+        self.loss_func = Sequence_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
+        # self.X_train, self.y_train = _load_stl10("train")
+        # self.X_test, self.y_test = _load_stl10("test")
 
     def train(self, config=None):
         if config is not None:

@@ -29,7 +29,7 @@ class ResNetSimCLR(nn.Module):
 
     def forward(self, x):
         h = self.features(x)
-        h = h.squeeze()
+        h = nn.Flatten()(h)
 
         x = self.l1(h)
         x = F.relu(x)
