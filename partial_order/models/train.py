@@ -235,19 +235,21 @@ class Sequence_train(Order_train):
         if config is not None:
             self.config = config
 
-        train_loader = self.dataset
+        train_loader = self.dataset(self.config['sequence']['duration'], self.config['sequence']['interval'])
+        self.X_train, self.y_train, self.X_test, self.y_test = train_loader.train_test_split(5, 2000)
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
-        if self.config["resume_saved_runs"]:
-            model = self._load_pre_trained_weights(model)
+        model = self._load_pre_trained_weights(model)
 
-        optimizer = torch.optim.Adam(model.parameters(), self.config['hybrid']['learning_rate'],
+        optimizer = torch.optim.Adam(model.parameters(), self.config['sequence']['learning_rate'],
                                      weight_decay=eval(self.config['weight_decay']))
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader), eta_min=0,
                                                                last_epoch=-1)
 
         n_iter = 0
+        valid_n_iter = 0
+        best_valid_loss = np.inf
         final_test_acc = 0.
         print('Training start ...')
 
@@ -256,26 +258,25 @@ class Sequence_train(Order_train):
             counter = 0
             if epoch_counter == 1 and self.config['testing_phase']:
                 break
-            for pre_anchor, anchor, post_anchor in train_loader:
-                pre_anchor, anchor, post_anchor = pre_anchor.to(self.device), anchor.to(self.device), post_anchor.to(self.device)
+            for (pre_anchor, anchor, post_anchor), _ in train_loader:
                 if counter == 1 and self.config['testing_phase']:
                     break
                 counter += 1
                 optimizer.zero_grad()
+                pre_anchor, anchor, post_anchor = pre_anchor.to(self.device), anchor.to(self.device), post_anchor.to(
+                    self.device)
                 loss = 0
-                if np.random.rand < w_cutmix:
-                    cutmix_image = compose_cutmix_image(x_anchor, x_anchor).to(self.device)
-                    loss += self._step_by_indices(model, cutmix_image, x_anchor)
-                if np.random.rand < w_mix_up:
-                    mix_up_image = compose_cutmix_image(x_anchor, x_anchor).to(self.device)
-                    loss += self._step_by_indices(model, mix_up_image, x_anchor)
+                for idx in range(len(pre_anchor) - 1, 0, -1):
+                    loss += self._step(model, pre_anchor[idx].unsqueeze(0), pre_anchor[idx - 1].unsqueeze(0), anchor)
+                for idx in range(len(post_anchor) - 1):
+                    loss += self._step(model, post_anchor[idx].unsqueeze(0), post_anchor[idx + 1].unsqueeze(0), anchor)
 
                 loss = loss.to(self.device)
                 loss.backward()
+                print(loss.item())
                 optimizer.step()
                 n_iter += 1
-
-            if epoch_counter % self.config['eval_every_n_epochs'] == 0:
+            if epoch_counter // self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))
                 train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test,
