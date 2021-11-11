@@ -98,6 +98,7 @@ class Sequence:
         cls_id = np.random.randint(len(self.data.keys()))
         sample_id = np.random.randint(len(self.data[cls_id]))
         data = self.transform(read_seq(self.data[cls_id][sample_id]))
+
         frame_id = np.random.randint(self.duration * self.interval,
                                      len(data) - self.duration * self.interval)
         self.counter += 1
