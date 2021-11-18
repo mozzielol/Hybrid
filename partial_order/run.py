@@ -42,8 +42,6 @@ def search_hybrid_config():
 
 def search_mix_config():
     config = {}
-    config['kernel_size'] = [(5, 5), (15, 15)]
-    config['sigma'] = [(1.5, 1.5)]
     config['delta'] = [0.1]
     config['probability'] = [(1.0, 0.5), (0.5, 1.0)]
     config['learning_rate'] = [1e-3]
@@ -74,8 +72,8 @@ def main(experiment='sequence'):
         keys = ['delta', 'learning_rate', 'duration', 'interval']
     elif experiment == 'mix':
         combinations = search_mix_config()
-        table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'Mix probabilities', 'test acc'])
-        keys = ['kernel_size', 'delta', 'learning_rate', 'probability']
+        table = PrettyTable(['learning_rate', 'Mix probabilities', 'test acc'])
+        keys = ['learning_rate', 'probability']
     elif experiment == 'hybrid':
         combinations = search_hybrid_config()
         table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'mix probability', 'triple_weights', 'test acc'])

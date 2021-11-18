@@ -116,6 +116,7 @@ class Order_train(object):
                 loss = loss.to(self.device)
                 loss.backward()
                 optimizer.step()
+                print(loss.item())
                 n_iter += 1
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
