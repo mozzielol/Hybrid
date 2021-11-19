@@ -27,10 +27,10 @@ def set_triplet_weights():
 
 def search_hybrid_config():
     config = {}
-    config['kernel_size'] = [(5, 5), (15, 15)]
+    config['kernel_size'] = [(5, 5)]
     config['sigma'] = [(1.5, 1.5)]
     config['delta'] = [0.1]
-    config['probability'] = [(1.0, 0.5), (0.5, 1.0)]
+    config['probability'] = [(0, 0), (1.0, 0), (0, 1.0)]
     config['triple_weights'] = [(0, 0, 0, 0, 1), (0, 0, 1, 0, 1), (0, 0, 1, 1, 1), (1, 0, 0, 0, 1), (1, 0, 1, 0, 1),
                                 (1, 0, 1, 1, 1)]
     config['learning_rate'] = [1e-3]
@@ -83,7 +83,7 @@ def main(experiment='sequence'):
         for key in c.keys():
             config['log_dir'] += str(c[key]) + '_'
         row = []
-        print('Trail %d/%d start ...' % (idx + 1, len(combinations) + 1))
+        print('Trail %d/%d start ...' % (idx + 1, len(combinations)))
         print(c)
         config['hybrid'] = c
         for k in keys:
@@ -101,4 +101,4 @@ def main(experiment='sequence'):
 
 
 if __name__ == "__main__":
-    main('mix')
+    main('hybrid')
