@@ -67,15 +67,15 @@ class Order_loss(torch.nn.Module):
         if single_pair:
             s1 = torch.diag(self.measure_similarity(zis, z_anchor)) if self.use_cosine_similarity else self.measure_similarity(zis, z_anchor)
             s2 = torch.diag(self.measure_similarity(zjs, z_anchor)) if self.use_cosine_similarity else self.measure_similarity(zjs, z_anchor)
-            differences = torch.clamp(s2 - s1 + self.delta, min=0)
+
         else:
             s1 = self.measure_similarity(zis, z_anchor)
             s2 = []
             for count in range(1, len(z_anchor) - 1):
-                s2.append(self.measure_similarity(zis, torch.roll(z_anchor, count, 0)))
+                s2.append(self.measure_similarity(zjs, torch.roll(z_anchor, count, 0)))
             s2 = torch.stack(s2)
             # loss = -torch.sum(torch.log(torch.mean(torch.clamp(s2 - s1 + self.delta, min=1e-5, max=1.), dim=-1)))
-            differences = torch.clamp(s2 - s1 + self.delta, min=0)
+        differences = torch.clamp(s2 - s1 + self.delta, min=0)
         #      differences = differences - differences.min()
         #      differences = differences / differences.max()
         loss = self.criterion(differences, torch.zeros_like(differences))
