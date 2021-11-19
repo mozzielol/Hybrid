@@ -6,6 +6,7 @@ log_every_n_steps: 50
 weight_decay: 10e-6
 testing_phase: False
 resume_saved_runs: False
+verbose: False
 
 hybrid:
   kernel_size: (15, 15)
@@ -27,4 +28,4 @@ dataset:
 
 loss:
   use_cosine_similarity: True
-  loss_function: mse
+  loss_function: bce
