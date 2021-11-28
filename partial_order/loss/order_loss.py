@@ -22,7 +22,7 @@ class Order_loss(torch.nn.Module):
             self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
             return self._cosine_simililarity
         else:
-            return self._metrics_similarity
+            return self._mahalanobis_distance
 
     @staticmethod
     def _dot_simililarity(x, y):
@@ -58,13 +58,23 @@ class Order_loss(torch.nn.Module):
         return dist
 
     def forward(self, zis, zjs, z_anchor, single_pair=False):
-        """
-        :param single_pair:
-        :param zis: similar to anchor
-        :param zjs: dissimilar to anchor
-        :param z_anchor: anchor image
-        :return:
-        """
+        '''
+        Function to calculate the loss
+        Parameters
+        ----------
+        zis: torch Tensor, (N * F) latent representation similar to anchor
+        zjs: torch Tensor, (N * F) latent representation DISSIMILAR to anchor
+        z_anchor: torch Tensor, (N * F) latent representation of anchor
+        single_pair: bool,
+            - if True, the function will calculate the similarity
+                of every images in the zjs to z_anchor.  (iterate the zjs)
+            - if False, the function will only calculate the similarity
+                of zjs to z_anchor element-wisely. (will not iterate the zjs)
+
+        Returns
+        -------
+
+        '''
         s1 = torch.diag(self.measure_similarity(zis, z_anchor)) if self.use_cosine_similarity \
             else self.measure_similarity(zis, z_anchor)
 
