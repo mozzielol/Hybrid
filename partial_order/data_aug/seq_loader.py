@@ -54,10 +54,8 @@ def read_seq(path):
         nbytes = struct.unpack_from('@i', bytes[s:s + 4])[0]
         I = bytes[s + 4:s + nbytes]
 
-        tmp_file = '/tmp/img%d.jpg' % i
-        open(tmp_file, 'wb+').write(I)
-
-        img = cv2.imread(tmp_file)
+        tmp_array = np.fromstring(I, np.uint8)
+        img = cv2.imdecode(tmp_array, cv2.IMREAD_COLOR)
         img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         images.append(img)
