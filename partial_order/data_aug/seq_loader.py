@@ -140,7 +140,7 @@ class Sequence:
                     while sample_id in train_sample_idx or np.random.random() > 0.5:
                         sample_id = np.random.randint(len(self.data[cls_id]))
                     train_sample_idx.append(sample_id)
-                data = read_seq(self.data[cls_id][sample_id])
+                data = self.transform(read_seq(self.data[cls_id][sample_id]))
                 frame_id = np.random.randint(len(data))
                 train_x.append(data[frame_id])
                 train_y.append(cls_id)
@@ -150,7 +150,7 @@ class Sequence:
                 if not replace:
                     while sample_id in train_sample_idx:
                         sample_id = np.random.randint(len(self.data[cls_id]))
-                data = read_seq(self.data[cls_id][sample_id])
+                data = self.transform(read_seq(self.data[cls_id][sample_id]))
                 frame_id = np.random.randint(len(data))
                 test_x.append(data[frame_id])
                 test_y.append(cls_id)
