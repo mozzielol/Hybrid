@@ -253,7 +253,7 @@ class Sequence_train(Order_train):
             self.config = config
 
         train_loader = self.dataset
-        self.X_train, self.y_train, self.X_test, self.y_test = train_loader.train_test_split(5, 2000)
+        self.X_train, self.y_train, self.X_test, self.y_test = train_loader.train_test_split(5, 20)
 
         model = ResNetSimCLR(**self.config["model"]).to(self.device)
         model = self._load_pre_trained_weights(model)
@@ -294,7 +294,7 @@ class Sequence_train(Order_train):
                     print(loss.item())
                 optimizer.step()
                 n_iter += 1
-            if epoch_counter // self.config['eval_every_n_epochs'] == 0:
+            if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))
                 train_acc, test_acc = eval_trail(model, self.X_train, self.y_train, self.X_test, self.y_test,
