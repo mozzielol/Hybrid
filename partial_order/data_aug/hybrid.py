@@ -102,25 +102,26 @@ def get_hybrid_images(image_batch, kernel=(9, 9), sigma=(1.5, 1.5)):
     :param image_batch: batch of input images
     :param kernel: kernel for Gaussian blurring to generate hybrid images
     :param sigma: standard deviation of Gaussian kernel
-    :return:
+    :return: a batch of hybrid images, a batch of images corresponding to the second component used in generating hybrid
+    images, and a boolean indicator matrix (i,j) specifying whether image_batch[i] and image_batch[j] is never mixed as
+    two components of a hybrid image
     """
     images = image_batch
-    negative_paris = []
 
-    idxs = []
-    for i in np.arange(len(image_batch)):
-        image_indices = np.arange(len(image_batch))
-        image_indices = np.delete(image_indices, i)
-        j = np.random.choice(len(image_indices))
-        idxs.append(j)
-        negative_paris.append(np.ones(len(image_batch), dtype=bool))
-        negative_paris[i][i] = False
-        negative_paris[i][image_indices[j]] = False
+    shift = np.random.randint(low=1, high=len(image_batch), size=len(image_batch))
+    idxs = (np.arange(len(image_batch)) + shift) % len(image_batch)
+    negative_pairs = np.logical_xor(
+        np.ones((len(image_batch),) * 2, dtype=bool), np.identity(len(image_batch), dtype=bool)
+    )
+
+    for i in range(len(negative_pairs)):
+        negative_pairs[i][idxs[i]] = False  # for components that meet in generating hybrid images
+
     hybrid_images = compose_hybrid_image(images, images[idxs], kernel, sigma)
     second_component = images[idxs]
-    negative_paris = np.array(negative_paris)
+    negative_pairs = np.array(negative_pairs)
 
-    return hybrid_images, second_component, negative_paris
+    return hybrid_images, second_component, negative_pairs
 
 
 def generate_pairs_with_hybrid_images(seed_images, kernel=(15, 15), weights=(0.5, 0.5)):
@@ -137,7 +138,7 @@ def generate_pairs_with_hybrid_images(seed_images, kernel=(15, 15), weights=(0.5
     num_pure = round(2 * num_seed * weights[0])
     num_hybrid = 2 * num_seed - num_pure
 
-    # Compute list of indices, each element corresponds to the seed index/indices of a output image
+    # Compute list of indices, each element corresponds to the seed index/indices of an output image
     pure_indices = [(idx,) for idx in np.random.choice(num_seed, num_pure, replace=False)]
     hybrid_indices = [tuple(np.random.choice(num_seed, 2, replace=False)) for i in range(num_hybrid)]
     composition_indices = pure_indices + hybrid_indices
@@ -209,13 +210,14 @@ def rand_bbox(size, lam):
 
 
 def roll_batch(image_batch):
-    idxs = []
-    for i in np.arange(len(image_batch)):
-        image_indices = np.arange(len(image_batch))
-        image_indices = np.delete(image_indices, i)
-        j = np.random.choice(len(image_indices))
-        idxs.append(j)
-    return image_batch[idxs]
+    """
+    Shuffle the image batch and make sure every image is moved to a different index
+    :param image_batch: a batch of image
+    :return: the fully shuffled image
+    """
+    shift = np.random.randint(low=1, high=len(image_batch), size=len(image_batch))
+    indices = (np.arange(len(image_batch)) + shift) % len(image_batch)
+    return image_batch[indices]
 
 
 def compose_cutmix_image(src_a, beta=0):
