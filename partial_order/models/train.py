@@ -94,7 +94,7 @@ class Order_train(object):
                     cutmix_image, src_b = compose_cutmix_image(x_anchor)
                     loss += self._step(model, cutmix_image, src_b, x_anchor)
                 if np.random.rand() < w_mix_up:
-                    mix_up_image, src_b = compose_cutmix_image(x_anchor)
+                    mix_up_image, src_b = compose_mixup_image(x_anchor)
                     loss += self._step(model, mix_up_image, src_b, x_anchor)
 
 
@@ -213,7 +213,7 @@ class Mix_train(Order_train):
                     cutmix_image, src_b = compose_cutmix_image(x_anchor)
                     loss += self._step(model, cutmix_image, src_b, x_anchor)
                 if np.random.rand() < w_mix_up:
-                    mix_up_image, src_b = compose_cutmix_image(x_anchor)
+                    mix_up_image, src_b = compose_mixup_image(x_anchor)
                     loss += self._step(model, mix_up_image, src_b, x_anchor)
 
                 loss = loss.to(self.device)
@@ -245,8 +245,6 @@ class Sequence_train(Order_train):
     def __init__(self, dataset, config):
         super().__init__(dataset, config)
         self.loss_func = Sequence_loss(config['model']['out_dim'], config['hybrid']['delta'], **config['loss'])
-        # self.X_train, self.y_train = _load_stl10("train")
-        # self.X_test, self.y_test = _load_stl10("test")
 
     def train(self, config=None):
         if config is not None:
