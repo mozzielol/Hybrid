@@ -1,43 +1,38 @@
 import torch
-import numpy as np
+import torch.nn as nn
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-class Order_loss(torch.nn.Module):
+class Order_loss(nn.Module):
 
     def __init__(self, dim, delta, use_cosine_similarity, loss_function):
         super(Order_loss, self).__init__()
-        self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
         self.measure_similarity = self._get_similarity_function(use_cosine_similarity)
-        self.criterion = torch.nn.BCELoss(reduction='sum') if loss_function == 'bce' else torch.nn.MSELoss(reduction='sum')
+        self.criterion = nn.BCELoss(reduction='sum') if loss_function.lower() == 'bce' else nn.MSELoss(reduction='sum')
         self.delta = delta
         self.use_cosine_similarity = use_cosine_similarity
         self.loss_function = loss_function
-        self.projector = torch.nn.Linear(dim, dim, bias=False).to(device)
-        self.mahalanobis_cov = torch.nn.Parameter(torch.rand((dim, dim)), requires_grad=True)
+        self.projector = nn.Linear(dim, dim, bias=False).to(device)
+        self.mahalanobis_cov = nn.Parameter(torch.rand((dim, dim)), requires_grad=True)
 
     def _get_similarity_function(self, use_cosine_similarity):
-        if use_cosine_similarity:
-            self._cosine_similarity = torch.nn.CosineSimilarity(dim=-1)
-            return self._cosine_simililarity
-        else:
-            return self._mahalanobis_distance
+        return self._cosine_similarity if use_cosine_similarity else self._mahalanobis_distance
 
     @staticmethod
-    def _dot_simililarity(x, y):
-        v = torch.tensordot(x.unsqueeze(1), y.T.unsqueeze(0), dims=2)
+    def _dot_similarity(x, y):
         # x shape: (N, 1, C)
         # y shape: (1, C, 2N)
         # v shape: (N, 2N)
+        v = torch.tensordot(x.unsqueeze(1), y.T.unsqueeze(0), dims=2)
         return v
 
-    def _cosine_simililarity(self, x, y):
+    @staticmethod
+    def _cosine_similarity(x, y):
         # x shape: (N, 1, C)
         # y shape: (1, 2N, C)
         # v shape: (N, 2N)
-        v = self._cosine_similarity(x.unsqueeze(1), y.unsqueeze(0))
-        return v
+        return nn.CosineSimilarity(dim=-1)(x.unsqueeze(1), y.unsqueeze(0))
 
     def _metrics_similarity(self, x, y):
         # return torch.sum(torch.square(self.projector(x) - self.projector(y)), dim=1)
