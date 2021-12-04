@@ -99,20 +99,20 @@ class Order_train(object):
 
 
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
-                AB, B, C = get_hybrid_images(x_anchor.to(self.device), self.config['hybrid']['kernel_size'],
-                                             self.config['hybrid']['sigma'])
+                AB, B, negative_pairs = get_hybrid_images(
+                    x_anchor.to(self.device), self.config['hybrid']['kernel_size'], self.config['hybrid']['sigma'])
                 A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
                 x_anchor = x_anchor.to(self.device)
                 if w_A1_B > 0:
                     loss += w_A1_B * self._step(model, A1, B, x_anchor)
                 if w_AB_C > 0:
-                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, C)
+                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, negative_pairs)
                 if w_A1_AB > 0:
                     loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
                 if w_AB_B > 0:
                     loss += w_AB_B * self._step(model, AB, B, x_anchor)
                 if w_A1_C > 0:
-                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, C)
+                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, negative_pairs)
 
                 loss = loss.to(self.device)
                 loss.backward()
@@ -120,6 +120,7 @@ class Order_train(object):
                 if self.config['verbose']:
                     print(loss.item())
                 n_iter += 1
+
             if epoch_counter % self.config['eval_every_n_epochs'] == 0:
                 self.writer.add_scalar('train_loss', loss, global_step=n_iter)
                 torch.save(model.state_dict(), os.path.join(self.config['log_dir'], 'checkpoints', 'model.pth'))
@@ -135,8 +136,6 @@ class Order_train(object):
             print('Epoch', epoch_counter, 'Time: ', stop - start)
 
         return final_test_acc
-
-        # warmup for the first 10 epochs
 
     def _validate(self, model, valid_loader):
         # validation steps
