@@ -11,6 +11,6 @@ partial_order/data/stl10_binary/train_X.bin
 partial_order/data/stl10_binary/train_y.bin
 partial_order/data/stl10_binary/unlabeled_X.bin
 *.iml
-
+**/.DS_Store
 __pycache__/
 *.py[cod]
