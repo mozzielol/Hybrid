@@ -90,12 +90,12 @@ class Order_train(object):
                 w_cutmix, w_mix_up = self.config['hybrid']['probability']
 
                 loss = 0
-                if np.random.rand() < w_cutmix:
+                if w_cutmix > 0:
                     cutmix_image, src_b = compose_cutmix_image(x_anchor)
-                    loss += self._step(model, cutmix_image, src_b, x_anchor)
-                if np.random.rand() < w_mix_up:
+                    loss += w_cutmix * self._step(model, cutmix_image, src_b, x_anchor)
+                if w_mix_up > 0:
                     mix_up_image, src_b = compose_mixup_image(x_anchor)
-                    loss += self._step(model, mix_up_image, src_b, x_anchor)
+                    loss += w_mix_up * self._step(model, mix_up_image, src_b, x_anchor)
 
 
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
