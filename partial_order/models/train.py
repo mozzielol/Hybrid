@@ -41,16 +41,16 @@ class Order_train(object):
             zjs = F.normalize(zjs, dim=1)
             z_anchor = F.normalize(z_anchor, dim=1)
 
-        loss = self.loss_func(zis, zjs, z_anchor, True)
+        loss = self.loss_func(zis, zjs, z_anchor, None)
         return loss
 
-    def _step_by_indices(self, model, xis, x_anchor):
+    def _step_by_indices(self, model, xis, x_anchor, negative_pairs):
         ris, zis = model(xis)  # [N,C]
         r_anchor, z_anchor = model(x_anchor)
         if self.config['loss']['use_cosine_similarity']:
             zis = F.normalize(zis, dim=1)
             z_anchor = F.normalize(z_anchor, dim=1)
-        loss = self.loss_func(zis, z_anchor, z_anchor)
+        loss = self.loss_func(zis, z_anchor, z_anchor, negative_pairs)
         return loss
 
     def train(self, config=None):
@@ -106,13 +106,13 @@ class Order_train(object):
                 if w_A1_B > 0:
                     loss += w_A1_B * self._step(model, A1, B, x_anchor)
                 if w_AB_C > 0:
-                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor)
+                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, C)
                 if w_A1_AB > 0:
                     loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
                 if w_AB_B > 0:
                     loss += w_AB_B * self._step(model, AB, B, x_anchor)
                 if w_A1_C > 0:
-                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor)
+                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, C)
 
                 loss = loss.to(self.device)
                 loss.backward()

@@ -57,7 +57,7 @@ class Order_loss(torch.nn.Module):
         dist = torch.sqrt(torch.einsum('ij, ij -> i', torch.matmul(delta, cov_inv), delta))
         return dist
 
-    def forward(self, zis, zjs, z_anchor, single_pair=False):
+    def forward(self, zis, zjs, z_anchor, negative_pairs=None):
         '''
         Function to calculate the loss
         Parameters
@@ -65,12 +65,8 @@ class Order_loss(torch.nn.Module):
         zis: torch Tensor, (N * F) latent representation similar to anchor
         zjs: torch Tensor, (N * F) latent representation DISSIMILAR to anchor
         z_anchor: torch Tensor, (N * F) latent representation of anchor
-        single_pair: bool,
-            - if True, the function will calculate the similarity
-                of every images in the zjs to z_anchor.  (iterate the zjs)
-            - if False, the function will only calculate the similarity
-                of zjs to z_anchor element-wisely. (will not iterate the zjs)
-
+        negative_pairs: torch Tensor, 256 * 256 bool tensors, row i is the
+            negative pairs of image i
         Returns
         -------
 
@@ -78,18 +74,16 @@ class Order_loss(torch.nn.Module):
         s1 = torch.diag(self.measure_similarity(zis, z_anchor)) if self.use_cosine_similarity \
             else self.measure_similarity(zis, z_anchor)
 
-        if single_pair:
+        if negative_pairs is None:
             s2 = torch.diag(self.measure_similarity(zjs, z_anchor)) if self.use_cosine_similarity \
                 else self.measure_similarity(zjs, z_anchor)
+            differences = torch.clamp(s2 - s1 + self.delta, min=0)
         else:
-            if self.use_cosine_similarity:
-                s2 = self.measure_similarity(zjs, z_anchor)
-            else:
-                s2 = []
-                for count in range(1, len(z_anchor) - 1):
-                    s2.append(self.measure_similarity(zjs, torch.roll(z_anchor, count, 0)))
-                s2 = torch.stack(s2)
-        differences = torch.clamp(s2 - s1 + self.delta, min=0)
+            s2 = []
+            for count in range(len(z_anchor)):
+                s2.append(self.measure_similarity(z_anchor[count].view(1, -1), z_anchor[negative_pairs[count]]))
+            s2 = torch.cat(s2) if self.use_cosine_similarity else torch.stack(s2)
+            differences = torch.clamp(s2 - s1.unsqueeze(1) + self.delta, min=0)
 
         if not self.use_cosine_similarity and self.loss_function.lower() == 'bce':  # BCE requires inputs in [0, 1]
             differences = differences - differences.min()
