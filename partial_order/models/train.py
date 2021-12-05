@@ -81,38 +81,38 @@ class Order_train(object):
             if epoch_counter == 1 and self.config['testing_phase']:
                 break
             for (A1, x_anchor), _ in train_loader:
-                A1, x_anchor = A1.to(self.device), x_anchor.to(self.device)
                 if counter == 1 and self.config['testing_phase']:
                     break
+                A1, x_anchor = A1.to(self.device), x_anchor.to(self.device)
                 counter += 1
                 optimizer.zero_grad()
 
-                w_cutmix, w_mix_up = self.config['hybrid']['probability']
+                prob_hybrid, prob_cutmix, prob_mix_up = self.config['hybrid']['probability']
+                w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
 
                 loss = 0
-                if np.random.rand() < w_cutmix:
+                if np.random.rand() < prob_cutmix:
                     cutmix_image, src_b = compose_cutmix_image(x_anchor)
                     loss += self._step(model, cutmix_image, src_b, x_anchor)
-                if np.random.rand() < w_mix_up:
+                if np.random.rand() < prob_mix_up:
                     mix_up_image, src_b = compose_mixup_image(x_anchor)
                     loss += self._step(model, mix_up_image, src_b, x_anchor)
 
+                if any(self.config['hybrid']['triple_weights'][:-1]):
+                    AB, B, negative_pairs = get_hybrid_images(
+                        x_anchor, self.config['hybrid']['kernel_size'], self.config['hybrid']['sigma'])
+                    AB, B = AB.to(self.device), B.to(self.device)
+                    if w_A1_B > 0:
+                        loss += w_A1_B * self._step(model, A1, B, x_anchor)
+                    if w_AB_C > 0:
+                        loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, negative_pairs)
+                    if w_A1_AB > 0:
+                        loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
+                    if w_AB_B > 0:
+                        loss += w_AB_B * self._step(model, AB, B, x_anchor)
 
-                w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
-                AB, B, negative_pairs = get_hybrid_images(
-                    x_anchor.to(self.device), self.config['hybrid']['kernel_size'], self.config['hybrid']['sigma'])
-                A1, AB, B = A1.to(self.device), AB.to(self.device), B.to(self.device)
-                x_anchor = x_anchor.to(self.device)
-                if w_A1_B > 0:
-                    loss += w_A1_B * self._step(model, A1, B, x_anchor)
-                if w_AB_C > 0:
-                    loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, negative_pairs)
-                if w_A1_AB > 0:
-                    loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
-                if w_AB_B > 0:
-                    loss += w_AB_B * self._step(model, AB, B, x_anchor)
                 if w_A1_C > 0:
-                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, negative_pairs)
+                    loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, torch.logical_not(torch.eye(len(A1))))
 
                 loss = loss.to(self.device)
                 loss.backward()
