@@ -45,12 +45,12 @@ class Order_train(object):
         return loss
 
     def _step_by_indices(self, model, xis, x_anchor, negative_pairs):
-        ris, zis = model(xis)  # [N,C]
-        r_anchor, z_anchor = model(x_anchor)
+        _, zis = model(xis)  # [N,C]
+        _, z_anchor = model(x_anchor)
         if self.config['loss']['use_cosine_similarity']:
             zis = F.normalize(zis, dim=1)
             z_anchor = F.normalize(z_anchor, dim=1)
-        loss = self.loss_func(zis, z_anchor, z_anchor, negative_pairs)
+        loss = self.loss_func(zis, None, z_anchor, negative_pairs)
         return loss
 
     def train(self, config=None):
