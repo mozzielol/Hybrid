@@ -44,16 +44,28 @@ class Order_train(object):
         loss = self.loss_func(zis, zjs, z_anchor, None)
         return loss
 
-    def _step_by_indices(self, model, xis, x_anchor, negative_pairs):
+    def _step_by_indices(self, model, xis, x_anchor, negative_indicators):
         _, zis = model(xis)  # [N,C]
         _, z_anchor = model(x_anchor)
         if self.config['loss']['use_cosine_similarity']:
             zis = F.normalize(zis, dim=1)
             z_anchor = F.normalize(z_anchor, dim=1)
-        loss = self.loss_func(zis, None, z_anchor, negative_pairs)
+        loss = self.loss_func(zis, None, z_anchor, negative_indicators)
         return loss
 
     def train(self, config=None):
+
+        def backprop(opt, ls):
+            """
+            Back-propagation step
+            :param opt: optimizer
+            :param ls: loss
+            :return: N/A
+            """
+            ls.to(self.device)
+            ls.backward()
+            opt.step()
+
         if config is not None:
             self.config = config
 
@@ -83,40 +95,58 @@ class Order_train(object):
             for (A1, x_anchor), _ in train_loader:
                 if counter == 1 and self.config['testing_phase']:
                     break
+
                 A1, x_anchor = A1.to(self.device), x_anchor.to(self.device)
                 counter += 1
+                loss = 0
                 optimizer.zero_grad()
 
-                prob_hybrid, prob_cutmix, prob_mix_up = self.config['hybrid']['probability']
                 w_A1_B, w_AB_C, w_A1_AB, w_AB_B, w_A1_C = self.config['hybrid']['triple_weights']
+                composite_kwargs = (
+                    {'method': 'hybrid', 'kernel': self.config['hybrid']['kernel'],
+                     'sigma': self.config['hybrid']['sigma']},
+                    {'method': 'cutmix', 'beta': self.config['hybrid']['cutmix_beta']},
+                    {'method': 'mixup', 'ratio_offset': self.config['hybrid']['mixup_ratio_offset']}
+                )
 
-                loss = 0
-                if np.random.rand() < prob_cutmix:
-                    cutmix_image, src_b = compose_cutmix_image(x_anchor)
-                    loss += self._step(model, cutmix_image, src_b, x_anchor)
-                if np.random.rand() < prob_mix_up:
-                    mix_up_image, src_b = compose_mixup_image(x_anchor)
-                    loss += self._step(model, mix_up_image, src_b, x_anchor)
+                config_probs = np.array(self.config['hybrid']['probability'])
+                rand_probs = np.random.rand(len(config_probs))
 
-                if any(self.config['hybrid']['triple_weights'][:-1]):
-                    AB, B, negative_pairs = get_hybrid_images(
-                        x_anchor, self.config['hybrid']['kernel_size'], self.config['hybrid']['sigma'])
-                    AB, B = AB.to(self.device), B.to(self.device)
-                    if w_A1_B > 0:
-                        loss += w_A1_B * self._step(model, A1, B, x_anchor)
-                    if w_AB_C > 0:
-                        loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, negative_pairs)
-                    if w_A1_AB > 0:
-                        loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
-                    if w_AB_B > 0:
-                        loss += w_AB_B * self._step(model, AB, B, x_anchor)
+                # When all composite methods are not selected in this epoch, use the one with max random prob
+                if all(rand_probs - config_probs) > 0:
+                    rand_probs[rand_probs.argmax()] += 1
 
                 if w_A1_C > 0:
                     loss += w_A1_C * self._step_by_indices(model, A1, x_anchor, torch.logical_not(torch.eye(len(A1))))
+                    if self.config['multi_step_update']:
+                        backprop(optimizer, loss)
 
-                loss = loss.to(self.device)
-                loss.backward()
-                optimizer.step()
+                for rand_prob, config_prob, kwargs in zip(rand_probs, config_probs, composite_kwargs):
+                    if rand_prob > config_prob:
+                        continue
+
+                    if any(self.config['hybrid']['triple_weights'][:-1]) > 0:
+                        if self.config['multi_step_update']:
+                            loss = 0
+                            optimizer.zero_grad()
+
+                        AB, B, negative_indicators = get_composite_images(x_anchor, **kwargs)
+                        AB, B = AB.to(self.device), B.to(self.device)
+                        if w_A1_B > 0:
+                            loss += w_A1_B * self._step(model, A1, B, x_anchor)
+                        if w_AB_C > 0:
+                            loss += w_AB_C * self._step_by_indices(model, AB, x_anchor, negative_indicators)
+                        if w_A1_AB > 0:
+                            loss += w_A1_AB * self._step(model, A1, AB, x_anchor)
+                        if w_AB_B > 0:
+                            loss += w_AB_B * self._step(model, AB, B, x_anchor)
+
+                        if self.config['multi_step_update']:
+                            backprop(optimizer, loss)
+
+                if not self.config['multi_step_update']:
+                    backprop(optimizer, loss)
+
                 if self.config['verbose']:
                     print(loss.item())
                 n_iter += 1

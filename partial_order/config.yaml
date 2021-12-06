@@ -7,13 +7,16 @@ weight_decay: 10e-6
 testing_phase: False
 resume_saved_runs: False
 verbose: False
+multi_step_update: True  # Do multiple optimizer.zero_grad(), loss.backward(), optimizer.step() to avoid out-of-memory
 
 hybrid:
-  kernel_size: (15, 15)
-  sigma: (1.5, 1.5)
+  kernel: [15, 15]
+  sigma: [1.5, 1.5]
   delta: 0.01
-  probability: (1, 1, 1)  # (hybrid, CutMix, Mixup)
-  triple_weights: (1, 1, 1, 1, 1)
+  cutmix_beta: 0.5  # must > 0
+  mixup_ratio_offset: 0  # must be [0, 0.5]
+  probability: [0, 1, 0]  # (hybrid, CutMix, Mixup)
+  triple_weights: [1, 1, 1, 1, 1]
   learning_rate: 0.0003
 
 model:

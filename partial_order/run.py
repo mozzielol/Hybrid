@@ -25,16 +25,21 @@ def set_triplet_weights():
     return weights
 
 
-def search_hybrid_config():
-    config = {}
-    config['kernel_size'] = [(5, 5)]
-    config['sigma'] = [(1.5, 1.5)]
-    config['delta'] = [0.1]
-    config['probability'] = [(1, 0, 0), (1, 1.0, 0), (1, 0, 1.0)]
-    config['triple_weights'] = [(0, 0, 0, 0, 1), (0, 0, 1, 0, 1), (0, 0, 1, 1, 1), (1, 0, 0, 0, 1), (1, 0, 1, 0, 1),
-                                (1, 0, 1, 1, 1)]
-    config['learning_rate'] = [1e-3]
-    # config['use_cosine_similarity'] = [False, True]
+def search_hybrid_config(config=None):
+    config = {} if config is None else config
+    config['kernel'] = ([5, 5])
+    config['sigma'] = ([1.5, 1.5])
+    config['delta'] = (0.1, )
+    config['probability'] = ([1, 1, 1], [1, 0, 0], [1, 1, 0], [1, 0, 1])
+    config['triple_weights'] = ([0, 0, 0, 0, 1], [0, 0, 1, 0, 1], [0, 0, 1, 1, 1], [1, 0, 0, 0, 1], [1, 0, 1, 0, 1],
+                                [1, 0, 1, 1, 1])
+    config['learning_rate'] = (1e-3, )
+
+    # Turn scalar to iterable 1-tuple for computing product combinations
+    for k, v in config.items():
+        if not isinstance(v, tuple):
+            config[k] = (v, )
+
     flat = [[(k, v) for v in vs] for k, vs in config.items()]
     combinations = [dict(items) for items in it.product(*flat)]
     return combinations
@@ -75,9 +80,9 @@ def main(experiment='sequence'):
         table = PrettyTable(['learning_rate', 'Mix probabilities', 'test acc'])
         keys = ['learning_rate', 'probability']
     elif experiment == 'hybrid':
-        combinations = search_hybrid_config()
+        combinations = search_hybrid_config(config['hybrid'])
         table = PrettyTable(['kernel size', 'delta', 'learning_rate', 'mix probability', 'triple_weights', 'test acc'])
-        keys = ['kernel_size', 'delta', 'learning_rate', 'probability', 'triple_weights']
+        keys = ['kernel', 'delta', 'learning_rate', 'probability', 'triple_weights']
     for idx, c in enumerate(combinations):
         config['log_dir'] = './runs/'
         for key in c.keys():

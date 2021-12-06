@@ -83,6 +83,7 @@ def compose_hybrid_image(src_low, src_high, kernel=(9, 9), sigma=(1.5, 1.5)):
     :param sigma: standard deviation of the kernel
     :return: hybrid image, shape (N x H x W x 3)
     """
+    kernel, sigma = tuple(kernel), tuple(sigma)
     image_low = tgm.image.gaussian_blur(src_low, kernel_size=kernel, sigma=sigma)
     image_high = src_high - tgm.image.gaussian_blur(src_high, kernel_size=kernel, sigma=sigma)
     return (image_low + image_high).clamp(0, 1)
@@ -99,6 +100,9 @@ def images_to_tensors(hybrid_images):
 
 def get_hybrid_images(image_batch, kernel=(9, 9), sigma=(1.5, 1.5)):
     """
+    (Replaced by get_composite_images)
+    Compute a batch of hybrid images based on the original image batch, also return (1) a batch of images containing the
+    second component and (2) indicator matrix [i,j] specifying image_batch[i] and image_batch[j] are never mixed
     :param image_batch: batch of input images
     :param kernel: kernel for Gaussian blurring to generate hybrid images
     :param sigma: standard deviation of Gaussian kernel
@@ -209,18 +213,7 @@ def rand_bbox(size, lam):
     return bbx1, bby1, bbx2, bby2
 
 
-def roll_batch(image_batch):
-    """
-    Shuffle the image batch and make sure every image is moved to a different index
-    :param image_batch: a batch of image
-    :return: the fully shuffled image
-    """
-    shift = np.random.randint(low=1, high=len(image_batch), size=len(image_batch))
-    indices = (np.arange(len(image_batch)) + shift) % len(image_batch)
-    return image_batch[indices]
-
-
-def compose_cutmix_image(src_a, beta=0):
+def compose_cutmix_image(src_a, src_b, beta=0.5):
     """
     Generate a batch of mixed sample using CutMix augmentation
     :param src_a: a batch of source images, shape N x D x H x W
@@ -228,7 +221,7 @@ def compose_cutmix_image(src_a, beta=0):
     :param beta: beta distribution coefficient that controls the ratio (\lambda) of the bounding box
     :return: a batch of CutMixed images: Cut src_b to mix src_a
     """
-    src_b = roll_batch(src_a)
+    assert beta > 0, 'Beta coefficient must be positive'
     assert src_a.shape == src_b.shape, 'Images for CutMix should have exact same shape.'
     if beta > 0:
         result = deepcopy(src_a)
@@ -236,12 +229,10 @@ def compose_cutmix_image(src_a, beta=0):
         rand_index = torch.randperm(src_a.size()[0]).cuda()
         bbx1, bby1, bbx2, bby2 = rand_bbox(src_a.size(), lam)
         result[:, :, bbx1:bbx2, bby1:bby2] = src_b[rand_index, :, bbx1:bbx2, bby1:bby2]
-        return result, src_b
-    else:
-        return src_a, src_b
+        return result
 
 
-def compose_mixup_image(src_a, ratio_offset=0):
+def compose_mixup_image(src_a, src_b, ratio_offset=0):
     """
     Generate a batch of mixed sample using Mixup augmentation
     :param src_a: a batch of source images, shape N x D x H x W
@@ -249,10 +240,43 @@ def compose_mixup_image(src_a, ratio_offset=0):
     :param ratio_offset: offset that controls the ratio of mixing two components, range [0, 0.5]
     :return:  a batch of Mixed-up images
     """
-    src_b = roll_batch(src_a)
     assert src_a.shape == src_b.shape, 'Images for Mixup should have exact same shape.'
     ratio_offset = max(min(ratio_offset, 0.5), 0)
     alphas = 0.5 + ratio_offset - 2 * ratio_offset * torch.rand(len(src_a))
     results = [alpha * image1 + (1 - alpha) * image2 for alpha, image1, image2 in zip(alphas, src_a, src_b)]
-    return torch.clamp(torch.stack(results), 0, 1), src_b
+    return torch.clamp(torch.stack(results), 0, 1)
 
+
+def get_composite_images(image_batch, **kwargs):
+    """
+    Compute a batch of composite images based on the original image batch, also return (1) a batch of images containing
+    the second component and (2) indicator matrix [i,j] specifying image_batch[i] and image_batch[j] are never mixed
+    :param image_batch: batch of input images
+    :param kwargs: a dictionary of arguments for the composite method
+    :return: a batch of composite images, a batch of images corresponding to the second component used in generating the
+    composite images, and a boolean indicator matrix (i,j) specifying whether image_batch[i] and image_batch[j] is never
+    mixed two components of a composite image
+    """
+    images = image_batch
+
+    shift = np.random.randint(low=1, high=len(image_batch), size=len(image_batch))
+    idxs = (np.arange(len(image_batch)) + shift) % len(image_batch)
+    negative_indicators = np.logical_xor(
+        np.ones((len(image_batch),) * 2, dtype=bool), np.identity(len(image_batch), dtype=bool)
+    )
+
+    for i in range(len(negative_indicators)):
+        negative_indicators[i][idxs[i]] = False  # for components that meet in generating hybrid images
+
+    method = kwargs['method']
+    if method.lower() == 'hybrid':
+        composite_images = compose_hybrid_image(images, images[idxs], kernel=kwargs['kernel'], sigma=kwargs['sigma'])
+    elif method.lower() == 'cutmix':
+        composite_images = compose_cutmix_image(images, images[idxs], beta=kwargs['beta'])
+    else:  # mixup
+        composite_images = compose_mixup_image(images, images[idxs], ratio_offset=kwargs['ratio_offset'])
+
+    second_component = images[idxs]
+    negative_indicators = np.array(negative_indicators)
+
+    return composite_images, second_component, negative_indicators
