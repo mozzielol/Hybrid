@@ -6,7 +6,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class Order_loss(nn.Module):
 
-    def __init__(self, dim, delta, use_cosine_similarity, loss_function):
+    def __init__(self, dim, delta, use_cosine_similarity, loss_function, **kwargs):
         super(Order_loss, self).__init__()
         self.measure_similarity = self._get_similarity_function(use_cosine_similarity)
         self.criterion = nn.BCELoss(reduction='sum') if loss_function.lower() == 'bce' else nn.MSELoss(reduction='sum')

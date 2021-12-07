@@ -92,7 +92,7 @@ class Order_train(object):
             counter = 0
             if epoch_counter == 1 and self.config['testing_phase']:
                 break
-            for (A1, x_anchor), _ in train_loader:
+            for (A1, _, x_anchor), _ in train_loader:
                 if counter == 1 and self.config['testing_phase']:
                     break
 
@@ -174,7 +174,7 @@ class Order_train(object):
 
             valid_loss = 0.0
             counter = 0
-            for (xis, x_anchor), _ in valid_loader:
+            for (xis, _, x_anchor), _ in valid_loader:
                 xis = xis.to(self.device)
                 xjs = xjs.to(self.device)
                 x_anchor = x_anchor.to(self.device)
@@ -229,7 +229,7 @@ class Mix_train(Order_train):
             counter = 0
             if epoch_counter == 1 and self.config['testing_phase']:
                 break
-            for (_, x_anchor), _ in train_loader:
+            for (_, _, x_anchor), _ in train_loader:
                 x_anchor = x_anchor.to(self.device)
                 if counter == 1 and self.config['testing_phase']:
                     break
