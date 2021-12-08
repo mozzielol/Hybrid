@@ -34,7 +34,6 @@ def search_hybrid_config(config=None):
     config['triple_weights'] = ([0, 0, 0, 0, 1], [0, 0, 1, 0, 1], [0, 0, 1, 1, 1], [1, 0, 0, 0, 1], [1, 0, 1, 0, 1],
                                 [1, 0, 1, 1, 1])
     config['learning_rate'] = (1e-3, )
-
     # Turn scalar to iterable 1-tuple for computing product combinations
     for k, v in config.items():
         if not isinstance(v, tuple):

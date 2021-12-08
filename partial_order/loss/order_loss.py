@@ -6,7 +6,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class Order_loss(nn.Module):
 
-    def __init__(self, dim, delta, use_cosine_similarity, loss_function, **kwargs):
+    def __init__(self, dim, delta, use_cosine_similarity, loss_function, additional_penalty=True):
         super(Order_loss, self).__init__()
         self.measure_similarity = self._get_similarity_function(use_cosine_similarity)
         self.criterion = nn.BCELoss(reduction='sum') if loss_function.lower() == 'bce' else nn.MSELoss(reduction='sum')
@@ -15,6 +15,7 @@ class Order_loss(nn.Module):
         self.loss_function = loss_function
         self.projector = nn.Linear(dim, dim, bias=False).to(device)
         self.mahalanobis_cov = nn.Parameter(torch.rand((dim, dim)), requires_grad=True)
+        self.additional_penalty = additional_penalty
 
     def _get_similarity_function(self, use_cosine_similarity):
         return nn.CosineSimilarity() if use_cosine_similarity else self._mahalanobis_distance
@@ -79,6 +80,9 @@ class Order_loss(nn.Module):
         differences = torch.clamp(differences, min=0, max=1)
 
         loss = self.criterion(differences, torch.zeros_like(differences))
+        if self.additional_penalty:
+            loss += nn.BCELoss(reduction='sum')(s1, torch.ones_like(s1))
+            loss += nn.BCELoss(reduction='sum')(s2, torch.zeros_like(s2))
         return loss
 
 

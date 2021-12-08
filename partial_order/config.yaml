@@ -33,3 +33,4 @@ dataset:
 loss:
   use_cosine_similarity: True
   loss_function: bce
+  additional_penalty: True
