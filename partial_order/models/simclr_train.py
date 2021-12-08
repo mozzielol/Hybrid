@@ -83,16 +83,14 @@ class Simclr_train(Order_train):
 
                 A1, A2, x_anchor = A1.to(self.device), A2.to(self.device), x_anchor.to(self.device)
                 counter += 1
-                loss = 0
                 optimizer.zero_grad()
 
-                w_hybrid, w_cut_mix, w_mixup, w_simclr = self.config['hybrid']['weights']
                 composite_kwargs = (
                     {'method': 'hybrid', 'kernel': self.config['hybrid']['kernel'],
-                     'sigma': self.config['hybrid']['sigma'], 'weight': w_hybrid},
-                    {'method': 'cutmix', 'beta': self.config['hybrid']['cutmix_beta'], 'weight': w_cut_mix},
-                    {'method': 'mixup', 'ratio_offset': self.config['hybrid']['mixup_ratio_offset'],
-                     'weight': w_mixup}
+                     'sigma': self.config['hybrid']['sigma']},
+                    {'method': 'cutmix', 'beta': self.config['hybrid']['cutmix_beta']},
+                    {'method': 'mixup', 'ratio_offset': self.config['hybrid']['mixup_ratio_offset']},
+                    {'method': 'simclr'},
                 )
 
                 config_probs = np.array(self.config['hybrid']['probability'])
@@ -102,14 +100,6 @@ class Simclr_train(Order_train):
                 if all(rand_probs - config_probs) > 0:
                     rand_probs[rand_probs.argmax()] += 1
 
-                if w_simclr > 0:
-                    pair = get_pairs(A2, x_anchor)
-                    if pair is None:
-                        pair = A2
-                    loss += w_simclr * self._step(model, A1, pair)
-                    if self.config['multi_step_update']:
-                        backprop(optimizer, loss)
-
                 for rand_prob, config_prob, kwargs in zip(rand_probs, config_probs, composite_kwargs):
                     if rand_prob > config_prob:
                         continue
@@ -118,13 +108,18 @@ class Simclr_train(Order_train):
                         if self.config['multi_step_update']:
                             loss = 0
                             optimizer.zero_grad()
-
-                        AB, _, _ = get_composite_images(x_anchor, **kwargs)
-                        AB= AB.to(self.device)
-                        pair = get_pairs(A2, x_anchor)
-                        if pair is None:
-                            pair, _, _ = get_composite_images(x_anchor, **kwargs)
-                        loss += kwargs['weight'] * self._step(model, AB, pair)
+                        if kwargs['method'] == 'simclr':
+                            pair = get_pairs(A2, x_anchor)
+                            if pair is None:
+                                pair = A2
+                            loss += self._step(model, A1, pair)
+                        else:
+                            AB, _, _ = get_composite_images(x_anchor, **kwargs)
+                            AB= AB.to(self.device)
+                            pair = get_pairs(A2, x_anchor)
+                            if pair is None:
+                                pair, _, _ = get_composite_images(x_anchor, **kwargs)
+                            loss += self._step(model, AB, pair)
 
                         if self.config['multi_step_update']:
                             backprop(optimizer, loss)

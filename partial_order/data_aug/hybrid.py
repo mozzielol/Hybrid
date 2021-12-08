@@ -226,7 +226,7 @@ def compose_cutmix_image(src_a, src_b, beta=0.5):
     if beta > 0:
         result = deepcopy(src_a)
         lam = np.random.beta(beta, beta)
-        rand_index = torch.randperm(src_a.size()[0]).cuda()
+        rand_index = torch.randperm(src_a.size()[0])
         bbx1, bby1, bbx2, bby2 = rand_bbox(src_a.size(), lam)
         result[:, :, bbx1:bbx2, bby1:bby2] = src_b[rand_index, :, bbx1:bbx2, bby1:bby2]
         return result

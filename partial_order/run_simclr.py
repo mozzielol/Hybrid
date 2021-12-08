@@ -29,9 +29,7 @@ def search_hybrid_config(config=None):
     config['kernel'] = ([5, 5])
     config['sigma'] = ([1.5, 1.5])
     config['delta'] = (0.1,)
-    config['probability'] = ([1, 1, 1], [1, 0, 0], [1, 1, 0], [1, 0, 1])
-    config['weights'] = ([1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1], [1, 0, 0, 1], [1, 0, 1, 1],
-                                [1, 0, 1,  1])
+    config['probability'] = ([1, 1, 1, 1], [1, 0, 0, 0], [1, 1, 0, 0], [1, 0, 1, 0])
     config['pair'] = ('AB_A', 'AB_A1', 'AB_AB')
     config['temperature'] = (0.5, 1.5)
     config['learning_rate'] = (1e-3,)
